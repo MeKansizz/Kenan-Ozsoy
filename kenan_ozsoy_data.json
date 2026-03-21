@@ -1,0 +1,911 @@
+{
+  "odemeler": [
+    {
+      "tarih": "2026-03-18",
+      "odeme_adi": "Aslı Tekstil (Van Dyck - IKEA)",
+      "tutar_eur": 38812.34,
+      "kur": 51.53,
+      "tl": 2000000.0,
+      "doviz": "tl"
+    },
+    {
+      "tarih": "2026-03-17",
+      "odeme_adi": "Mehmet Değirmenci",
+      "tutar_eur": 9511.25,
+      "kur": 1.1565256729246778,
+      "tl": 11000.0,
+      "doviz": "usd"
+    },
+    {
+      "tarih": "2026-03-18",
+      "odeme_adi": "Maaş",
+      "tutar_eur": 91922.55,
+      "kur": 51.13,
+      "tl": 4700000.0,
+      "doviz": "tl"
+    },
+    {
+      "tarih": "2026-03-23",
+      "odeme_adi": "Ziraat Bankası Melih Kansız",
+      "tutar_eur": 2279.02,
+      "kur": 51.13,
+      "tl": 116526.54,
+      "doviz": "tl"
+    },
+    {
+      "tarih": "2026-03-23",
+      "odeme_adi": "Yapı Kredi Serdar Kundak",
+      "tutar_eur": 1475.07,
+      "kur": 51.13,
+      "tl": 75420.11,
+      "doviz": "tl"
+    },
+    {
+      "tarih": "2026-03-23",
+      "odeme_adi": "Teb",
+      "tutar_eur": 1102.8,
+      "kur": 1.0,
+      "tl": 1102.8048402710551,
+      "doviz": "eur"
+    },
+    {
+      "tarih": "2026-03-23",
+      "odeme_adi": "Teb",
+      "tutar_eur": 1104.13,
+      "kur": 1.0,
+      "tl": 1104.1337850919651,
+      "doviz": "eur"
+    },
+    {
+      "tarih": "2026-03-24",
+      "odeme_adi": "Heimtex ödeme (son Tarih)",
+      "tutar_eur": 6270.0,
+      "kur": 1.0,
+      "tl": 6270.0,
+      "doviz": "eur"
+    },
+    {
+      "tarih": "2026-03-23",
+      "odeme_adi": "Aslı Tekstil (10 Nisana kadar siparişler) + VAN (14 Nisan)",
+      "tutar_eur": 23469.59,
+      "kur": 51.13,
+      "tl": 1200000.0,
+      "doviz": "tl"
+    },
+    {
+      "tarih": "2026-07-23",
+      "odeme_adi": "YENİ İPLİK (24/04/2026 Tarihine Kadar Siparişler)",
+      "tutar_eur": 90789.16,
+      "kur": 1.1565256729246778,
+      "tl": 105000.0,
+      "doviz": "usd"
+    },
+    {
+      "tarih": "2026-03-31",
+      "odeme_adi": "Çağtek Müh.Elek.İnş.Taah.Teks.San.Ltd.Şti̇.",
+      "tutar_eur": 19557.99,
+      "kur": 51.13,
+      "tl": 1000000.0,
+      "doviz": "tl"
+    },
+    {
+      "tarih": "2026-03-31",
+      "odeme_adi": "Yağmur Teksti̇l Boya San. Ve Ti̇c. Ltd. Şti̇.",
+      "tutar_eur": 5867.4,
+      "kur": 51.13,
+      "tl": 300000.0,
+      "doviz": "tl"
+    },
+    {
+      "tarih": "2026-03-31",
+      "odeme_adi": "Webeti̇ket Ofset Teksti̇l Aks.San.Ve Ti̇c.Ltd.Şti̇.",
+      "tutar_eur": 4889.5,
+      "kur": 51.13,
+      "tl": 250000.0,
+      "doviz": "tl"
+    },
+    {
+      "tarih": "2026-03-31",
+      "odeme_adi": "Dentat Yemek Gida İnş.San.Ve Ti̇c.Ltd.Şti̇.",
+      "tutar_eur": 9778.99,
+      "kur": 51.13,
+      "tl": 500000.0,
+      "doviz": "tl"
+    },
+    {
+      "tarih": "2026-03-31",
+      "odeme_adi": "Deni̇zli̇ Gün Plasti̇k Ambalaj Sanayi̇ Ve Ti̇caret Ltd.Şti̇.",
+      "tutar_eur": 5867.4,
+      "kur": 51.13,
+      "tl": 300000.0,
+      "doviz": "tl"
+    },
+    {
+      "tarih": "2026-03-31",
+      "odeme_adi": "Deneks Uluslararasi Taş.San.Ti̇c.Ltd.Şti̇.",
+      "tutar_eur": 28961.18,
+      "kur": 51.13,
+      "tl": 1480785.0,
+      "doviz": "tl"
+    },
+    {
+      "tarih": "2026-03-31",
+      "odeme_adi": "Altinbaşak Teksti̇l San. Ve Ti̇c. A.Ş.",
+      "tutar_eur": 45490.87,
+      "kur": 51.13,
+      "tl": 2325948.0,
+      "doviz": "tl"
+    },
+    {
+      "tarih": "2026-03-31",
+      "odeme_adi": "Yeni̇yol Ofset Matbaacilik Ti̇caret Ltd.Şti̇.",
+      "tutar_eur": 9778.99,
+      "kur": 51.13,
+      "tl": 500000.0,
+      "doviz": "tl"
+    },
+    {
+      "tarih": "2026-03-31",
+      "odeme_adi": "Yağmur Teksti̇l Boya San. Ve Ti̇c. Ltd. Şti̇.",
+      "tutar_eur": 2669.64,
+      "kur": 51.13,
+      "tl": 136498.91,
+      "doviz": "tl"
+    },
+    {
+      "tarih": "2026-03-31",
+      "odeme_adi": "Felece Yazilim Ve Danişmanlik A.Ş.",
+      "tutar_eur": 10756.89,
+      "kur": 51.13,
+      "tl": 550000.0,
+      "doviz": "tl"
+    },
+    {
+      "tarih": "2026-04-03",
+      "odeme_adi": "Aslı Tekstil (17 Nisana kadar siparişler)",
+      "tutar_eur": 38812.34,
+      "kur": 51.53,
+      "tl": 2000000.0,
+      "doviz": "tl"
+    },
+    {
+      "tarih": "2026-04-03",
+      "odeme_adi": "YENİ İPLİK (30/04/2026 Tarihine Kadar Siparişler)",
+      "tutar_eur": 90789.16,
+      "kur": 1.1565256729246778,
+      "tl": 105000.0,
+      "doviz": "usd"
+    },
+    {
+      "tarih": "2026-04-03",
+      "odeme_adi": "MUHTELİF",
+      "tutar_eur": 50000.0,
+      "kur": 1.0,
+      "tl": 50000.0,
+      "doviz": "eur"
+    },
+    {
+      "tarih": "2026-04-03",
+      "odeme_adi": "SGK",
+      "tutar_eur": 39115.98,
+      "kur": 51.13,
+      "tl": 2000000.0,
+      "doviz": "tl"
+    },
+    {
+      "tarih": "2026-04-10",
+      "odeme_adi": "MAAŞ",
+      "tutar_eur": 93149.62,
+      "kur": 51.53,
+      "tl": 4800000.0,
+      "doviz": "tl"
+    },
+    {
+      "tarih": "2026-04-10",
+      "odeme_adi": "BOYAHANE (24 Nisana kadar siparişler)",
+      "tutar_eur": 38812.34,
+      "kur": 51.53,
+      "tl": 2000000.0,
+      "doviz": "tl"
+    },
+    {
+      "tarih": "2026-04-15",
+      "odeme_adi": "KFA FUARCILIK A.Ş. (ÇEK)",
+      "tutar_eur": 4620.93,
+      "kur": 51.53,
+      "tl": 238116.37,
+      "doviz": "tl"
+    },
+    {
+      "tarih": "2026-02-15",
+      "odeme_adi": "MCO iplik",
+      "tutar_eur": 69572.09,
+      "kur": 1.171935410507164,
+      "tl": 81534.0,
+      "doviz": "usd"
+    },
+    {
+      "tarih": "2026-02-11",
+      "odeme_adi": "ZEKİ iplik",
+      "tutar_eur": 60440.66,
+      "kur": 1.1565256729246778,
+      "tl": 69901.18,
+      "doviz": "usd"
+    },
+    {
+      "tarih": "2026-04-17",
+      "odeme_adi": "BOYA (30 Nisana kadar siparişler)",
+      "tutar_eur": 29109.26,
+      "kur": 51.53,
+      "tl": 1500000.0,
+      "doviz": "tl"
+    },
+    {
+      "tarih": "2026-02-18",
+      "odeme_adi": "ZEKİ iplik",
+      "tutar_eur": 18244.69,
+      "kur": 1.1565256729246778,
+      "tl": 21100.45,
+      "doviz": "usd"
+    },
+    {
+      "tarih": "2026-02-21",
+      "odeme_adi": "ZEKİ iplik",
+      "tutar_eur": 36598.15,
+      "kur": 1.1565256729246778,
+      "tl": 42326.7,
+      "doviz": "usd"
+    },
+    {
+      "tarih": "2026-04-15",
+      "odeme_adi": "KFA FUARCILIK A.Ş.",
+      "tutar_eur": 4657.08,
+      "kur": 51.13,
+      "tl": 238116.37,
+      "doviz": "tl"
+    },
+    {
+      "tarih": "2026-04-22",
+      "odeme_adi": "BİRTEKS TRİKO TEKS. SAN.TİC.LTD.ŞTİ.",
+      "tutar_eur": 9778.99,
+      "kur": 51.13,
+      "tl": 500000.0,
+      "doviz": "tl"
+    },
+    {
+      "tarih": "2026-04-30",
+      "odeme_adi": "ÇAĞTEK MÜH.ELEK.İNŞ.TAAH.TEKS.SAN.LTD.ŞTİ.",
+      "tutar_eur": 19557.99,
+      "kur": 51.13,
+      "tl": 1000000.0,
+      "doviz": "tl"
+    },
+    {
+      "tarih": "2026-04-30",
+      "odeme_adi": "YENİYOL OFSET MATBAACILIK TİCARET LTD.ŞTİ.",
+      "tutar_eur": 9778.99,
+      "kur": 51.13,
+      "tl": 500000.0,
+      "doviz": "tl"
+    },
+    {
+      "tarih": "2026-04-30",
+      "odeme_adi": "DENEKS ULUSLARARASI TAŞ.SAN.TİC.LTD.ŞTİ.",
+      "tutar_eur": 26474.06,
+      "kur": 51.13,
+      "tl": 1353618.63,
+      "doviz": "tl"
+    },
+    {
+      "tarih": "2026-04-30",
+      "odeme_adi": "ALTINBAŞAK TEKSTİL SAN. VE TİC. A.Ş.",
+      "tutar_eur": 34743.35,
+      "kur": 51.13,
+      "tl": 1776427.68,
+      "doviz": "tl"
+    },
+    {
+      "tarih": "2026-04-30",
+      "odeme_adi": "REEL OFSET ETİKET TEKS.AKS.SAN.TİC.LTD.ŞTİ.",
+      "tutar_eur": 5867.4,
+      "kur": 51.13,
+      "tl": 300000.0,
+      "doviz": "tl"
+    },
+    {
+      "tarih": "2026-04-30",
+      "odeme_adi": "İDEAL MOBİLYA DEKORASYON - UĞUR BÜTÜN",
+      "tutar_eur": 4889.5,
+      "kur": 51.13,
+      "tl": 250000.0,
+      "doviz": "tl"
+    },
+    {
+      "tarih": "2026-04-30",
+      "odeme_adi": "M. ŞENTUR - MUSTAFA ŞEN",
+      "tutar_eur": 19557.99,
+      "kur": 51.13,
+      "tl": 1000000.0,
+      "doviz": "tl"
+    },
+    {
+      "tarih": "2026-04-30",
+      "odeme_adi": "FELECE YAZILIM VE DANIŞMANLIK A.Ş.",
+      "tutar_eur": 10756.89,
+      "kur": 51.13,
+      "tl": 550000.0,
+      "doviz": "tl"
+    },
+    {
+      "tarih": "2026-04-30",
+      "odeme_adi": "DENEKS ( NİSAN Ödemesi) 90 GÜN ÇEK verilecek",
+      "tutar_eur": 40000.0,
+      "kur": 1.0,
+      "tl": 40000.0,
+      "doviz": "eur"
+    }
+  ],
+  "siparisler": [
+    {
+      "tarih": "2026-03-16",
+      "fatura_no": "2629031",
+      "musteri": "Kid Sourcing",
+      "siparis_no": "",
+      "tutar": 51419.52,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 51419.52,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-03-18",
+      "fatura_no": "",
+      "musteri": "Biberna",
+      "siparis_no": "",
+      "tutar": 66000.0,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 66000.0,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-03-18",
+      "fatura_no": "",
+      "musteri": "Corn Vandyck",
+      "siparis_no": "",
+      "tutar": 38000.0,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 38000.0,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-03-27",
+      "fatura_no": "",
+      "musteri": "Bare Home",
+      "siparis_no": "370-001,002,004İLAVE",
+      "tutar": 35171.22,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 35171.22,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-03-27",
+      "fatura_no": "",
+      "musteri": "Corn Van Dijk",
+      "siparis_no": "26-001,002,003,004",
+      "tutar": 75000.0,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 75000.0,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-03-27",
+      "fatura_no": "",
+      "musteri": "Corn Van Dijk",
+      "siparis_no": "26-318-005,6,",
+      "tutar": 20456.0,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 20456.0,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-03-27",
+      "fatura_no": "",
+      "musteri": "HEMTEX",
+      "siparis_no": "25-338-009",
+      "tutar": 9645.0,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 9645.0,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-03-27",
+      "fatura_no": "",
+      "musteri": "Monoprix",
+      "siparis_no": "26-498-002",
+      "tutar": 10644.0,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 10644.0,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-03-27",
+      "fatura_no": "",
+      "musteri": "Baumeister",
+      "siparis_no": "L2507515 (25-292-005, 006)",
+      "tutar": 12175.0,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 12175.0,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-03-27",
+      "fatura_no": "",
+      "musteri": "Texblanka",
+      "siparis_no": "470-004",
+      "tutar": 25941.92,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 25941.92,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-03-28",
+      "fatura_no": "",
+      "musteri": "Bedding House",
+      "siparis_no": "52507(25-381-005)",
+      "tutar": 65000.0,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 65000.0,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-04-03",
+      "fatura_no": "",
+      "musteri": "IKEA",
+      "siparis_no": "26-493-003 88.905 USD",
+      "tutar": 88905.0,
+      "kur": 1.1565256729246778,
+      "doviz": "USD",
+      "tutar_eur": 76872.48,
+      "vade_gun": 30
+    },
+    {
+      "tarih": "2026-04-03",
+      "fatura_no": "",
+      "musteri": "IKEA",
+      "siparis_no": "26-493-007",
+      "tutar": 5514.63,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 5514.63,
+      "vade_gun": 30
+    },
+    {
+      "tarih": "2026-04-10",
+      "fatura_no": "",
+      "musteri": "Bedding House",
+      "siparis_no": "",
+      "tutar": 14555.0,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 14555.0,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-04-10",
+      "fatura_no": "",
+      "musteri": "Vertical Brand",
+      "siparis_no": "",
+      "tutar": 15400.0,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 15400.0,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-04-10",
+      "fatura_no": "",
+      "musteri": "Vertical Brand",
+      "siparis_no": "",
+      "tutar": 9361.92,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 9361.92,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-04-10",
+      "fatura_no": "",
+      "musteri": "Fazzini",
+      "siparis_no": "",
+      "tutar": 14436.0,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 14436.0,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-04-10",
+      "fatura_no": "",
+      "musteri": "XXXLutz",
+      "siparis_no": "",
+      "tutar": 8578.44,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 8578.44,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-04-10",
+      "fatura_no": "",
+      "musteri": "Onto Object",
+      "siparis_no": "",
+      "tutar": 3628.0,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 3628.0,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-04-10",
+      "fatura_no": "",
+      "musteri": "Vertical Brand",
+      "siparis_no": "",
+      "tutar": 3871.0,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 3871.0,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-04-14",
+      "fatura_no": "",
+      "musteri": "Emmezate",
+      "siparis_no": "339-001,002,003,004,005,006,007",
+      "tutar": 62173.0,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 62173.0,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-04-14",
+      "fatura_no": "",
+      "musteri": "Corn Van Dijk",
+      "siparis_no": "318-008,007",
+      "tutar": 56445.0,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 56445.0,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-04-14",
+      "fatura_no": "",
+      "musteri": "Corn Van Dijk",
+      "siparis_no": "318-012",
+      "tutar": 5805.6,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 5805.6,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-04-14",
+      "fatura_no": "",
+      "musteri": "Sukno",
+      "siparis_no": "341-001,004",
+      "tutar": 22076.0,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 22076.0,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-04-14",
+      "fatura_no": "",
+      "musteri": "TBBC",
+      "siparis_no": "115507-508 (25-465-001,2)",
+      "tutar": 8577.77,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 8577.77,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-04-14",
+      "fatura_no": "",
+      "musteri": "LUANA S.R.O.",
+      "siparis_no": "505-001",
+      "tutar": 14271.0,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 14271.0,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-04-17",
+      "fatura_no": "",
+      "musteri": "XXXLutz",
+      "siparis_no": "8JLWE (26-287-002,003,004,005) 8JLWF(26-287-016,006,007),008,016",
+      "tutar": 86112.46,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 86112.46,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-04-17",
+      "fatura_no": "",
+      "musteri": "XXXLutz",
+      "siparis_no": "8K8EQ(26-287-012,013,014,015) 8K8EP26-287-009,010,011",
+      "tutar": 55414.32,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 55414.32,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-04-17",
+      "fatura_no": "",
+      "musteri": "Belamionix d.o.o.",
+      "siparis_no": "512-002,003",
+      "tutar": 16087.0,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 16087.0,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-04-22",
+      "fatura_no": "",
+      "musteri": "Diechof",
+      "siparis_no": "453-004,008",
+      "tutar": 7100.0,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 7100.0,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-04-22",
+      "fatura_no": "",
+      "musteri": "Monoprix",
+      "siparis_no": "26-498-001",
+      "tutar": 96588.0,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 96588.0,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-04-24",
+      "fatura_no": "",
+      "musteri": "Corn Van Dijk",
+      "siparis_no": "26-318-011",
+      "tutar": 87794.0,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 87794.0,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-04-24",
+      "fatura_no": "",
+      "musteri": "Corn Van Dijk",
+      "siparis_no": "26-318-010",
+      "tutar": 9624.0,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 9624.0,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-04-24",
+      "fatura_no": "",
+      "musteri": "Corn Van Dijk",
+      "siparis_no": "26-318-009",
+      "tutar": 9176.0,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 9176.0,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-04-27",
+      "fatura_no": "",
+      "musteri": "Petie",
+      "siparis_no": "321-017,018,019,020,021,022",
+      "tutar": 15160.0,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 15160.0,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-04-27",
+      "fatura_no": "",
+      "musteri": "Petie",
+      "siparis_no": "(26-321-006,7,8,9,10)",
+      "tutar": 8307.0,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 8307.0,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-04-27",
+      "fatura_no": "",
+      "musteri": "Petie",
+      "siparis_no": "(26-321-023,024",
+      "tutar": 434.0,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 434.0,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-04-27",
+      "fatura_no": "",
+      "musteri": "MAİSONETTE",
+      "siparis_no": "26-509-001",
+      "tutar": 3900.0,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 3900.0,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-04-27",
+      "fatura_no": "",
+      "musteri": "Vertical Brand",
+      "siparis_no": "8011011 26-310-005",
+      "tutar": 36545.0,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 36545.0,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-04-27",
+      "fatura_no": "",
+      "musteri": "CASARO Textil GmbH",
+      "siparis_no": "26-508-001",
+      "tutar": 9174.0,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 9174.0,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-04-27",
+      "fatura_no": "",
+      "musteri": "FLORINGO GMBH",
+      "siparis_no": "26-503-001",
+      "tutar": 1420.0,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 1420.0,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-04-30",
+      "fatura_no": "",
+      "musteri": "XXXLutz",
+      "siparis_no": "287-,017,018,19,20,21,22",
+      "tutar": 24728.0,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 24728.0,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-04-30",
+      "fatura_no": "",
+      "musteri": "XXXLutz",
+      "siparis_no": "287-023,024,025,026,027,028",
+      "tutar": 61825.0,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 61825.0,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-04-30",
+      "fatura_no": "",
+      "musteri": "DEKORATEX",
+      "siparis_no": "26-489-001",
+      "tutar": 5562.2,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 5562.2,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-04-30",
+      "fatura_no": "",
+      "musteri": "TECHNOTEX",
+      "siparis_no": "26-105-001",
+      "tutar": 11823.5,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 11823.5,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-04-30",
+      "fatura_no": "",
+      "musteri": "Bare Home",
+      "siparis_no": "3216",
+      "tutar": 15211.76,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 15211.76,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-04-30",
+      "fatura_no": "",
+      "musteri": "Bare Home",
+      "siparis_no": "370-007,8,9,10",
+      "tutar": 64936.41,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 64936.41,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-04-30",
+      "fatura_no": "",
+      "musteri": "Bare Home",
+      "siparis_no": "370-011,12,13,14,15",
+      "tutar": 27074.87,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 27074.87,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-04-30",
+      "fatura_no": "",
+      "musteri": "Bare Home",
+      "siparis_no": "3183-3184",
+      "tutar": 15045.86,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 15045.86,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-04-30",
+      "fatura_no": "",
+      "musteri": "Bare Home",
+      "siparis_no": "3196-3197",
+      "tutar": 15757.35,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 15757.35,
+      "vade_gun": null
+    },
+    {
+      "tarih": "2026-04-30",
+      "fatura_no": "",
+      "musteri": "Bare Home",
+      "siparis_no": "370-001,002,004İLAVE",
+      "tutar": 52756.83,
+      "kur": 1.0,
+      "doviz": "EUR",
+      "tutar_eur": 52756.83,
+      "vade_gun": null
+    }
+  ]
+}
