@@ -6,15 +6,18 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
 
 COPY package*.json ./
-RUN npm ci
+RUN npm ci --include=dev
 
 COPY . .
 
 # Build frontend + server
 RUN npm run build:all
 
-# Seed database if not exists
-RUN npm run db:seed || true
+# Seed database
+RUN npx tsx server/seed-kenan.ts
+
+# Cleanup dev dependencies
+RUN npm prune --production
 
 EXPOSE 3002
 ENV PORT=3002
