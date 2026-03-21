@@ -10,15 +10,8 @@ RUN npm ci --include=dev
 
 COPY . .
 
-# Build frontend + server + seed script
+# Build frontend + server
 RUN npm run build:all
-RUN npx esbuild server/seed-kenan.ts --bundle --platform=node --outfile=dist-server/seed.js --external:better-sqlite3
-
-# Seed database
-RUN node dist-server/seed.js
-
-# Cleanup dev dependencies
-RUN npm prune --production
 
 EXPOSE 3002
 ENV PORT=3002
