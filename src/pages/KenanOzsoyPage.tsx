@@ -514,8 +514,11 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
     const rates = await fetchKur(date)
     if (rates) {
       if (d === 'USD') {
-        setOdemeForm(p => ({ ...p, kur: String(rates.usd) }))
+        // EUR/USD = EUR_TL / USD_TL
+        const eurUsd = Math.round((rates.eur / rates.usd) * 10000) / 10000
+        setOdemeForm(p => ({ ...p, kur: String(eurUsd) }))
       } else {
+        // EUR/TL
         setOdemeForm(p => ({ ...p, kur: String(rates.eur) }))
       }
     }
