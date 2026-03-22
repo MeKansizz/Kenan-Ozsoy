@@ -601,16 +601,19 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
   }
 
   const startEditOdeme = (o: Odeme) => {
+    const doviz = (o as any).doviz || 'TL'
     setOdemeForm({
       tarih: o.tarih, odeme_adi: o.odeme_adi,
       tl_tutar: o.tl_tutar ? String(o.tl_tutar) : '',
       tutar_eur: o.tutar_eur ? String(o.tutar_eur) : '',
       kur: o.kur ? String(o.kur) : '',
-      doviz: (o as any).doviz || 'TL',
+      doviz,
       durum: o.durum, donem: o.donem || '', notlar: o.notlar || ''
     })
     setEditOdemeId(o.id)
     setShowOdemeForm(true)
+    // Refresh kur for the saved currency
+    fetchOdemeKur(o.tarih, doviz)
   }
 
   // Sipariş handlers
@@ -699,7 +702,7 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
             </div>
             <div>
               <label className="text-xs text-[--color-text-muted] mb-1 block">
-                Kur {odemeForm.doviz === 'EUR' ? '' : odemeForm.doviz === 'USD' ? '(EUR/USD)' : '(EUR/TL)'} <span className="text-copper">TCMB</span>
+                {odemeForm.doviz === 'EUR' ? 'Kur' : odemeForm.doviz === 'USD' ? 'Kur (1€ = ?$)' : 'Kur (1€ = ?₺)'} {odemeForm.doviz !== 'EUR' && <span className="text-copper">TCMB</span>}
               </label>
               <input type="number" step="0.0001" value={odemeForm.kur} onChange={e => setOdemeForm(p => ({ ...p, kur: e.target.value }))} placeholder={odemeForm.doviz === 'EUR' ? '1' : 'Otomatik'} disabled={odemeForm.doviz === 'EUR'} className={`${inputCls} ${odemeForm.doviz === 'EUR' ? 'opacity-50' : ''}`} />
             </div>
