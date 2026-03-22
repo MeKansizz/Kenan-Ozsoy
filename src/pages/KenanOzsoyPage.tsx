@@ -14,7 +14,7 @@ function formatTl(val: number): string {
 }
 function formatKur(val: number | null | undefined): string {
   if (!val) return '-'
-  return new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 4, maximumFractionDigits: 4 }).format(val)
+  return new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val)
 }
 function formatNum(val: number | null | undefined, decimals = 2): string {
   if (val === null || val === undefined) return '-'
