@@ -102,6 +102,22 @@ router.put('/users/change-password', (req, res) => {
   res.json({ success: true })
 })
 
+// Kullanıcı sil (sadece admin)
+router.delete('/users/:name', (req, res) => {
+  const db = getDb()
+  const { admin_user } = req.query as Record<string, string>
+  if (!admin_user) return res.status(403).json({ message: 'Admin yetkisi gerekli' })
+  const admin = db.prepare('SELECT role FROM kenan_users WHERE name = ?').get(admin_user) as any
+  if (!admin || admin.role !== 'admin') return res.status(403).json({ message: 'Admin yetkisi gerekli' })
+  if (req.params.name === admin_user) return res.status(400).json({ message: 'Kendinizi silemezsiniz' })
+
+  const user = db.prepare('SELECT id FROM kenan_users WHERE name = ?').get(req.params.name) as any
+  if (!user) return res.status(404).json({ message: 'Kullanıcı bulunamadı' })
+
+  db.prepare('DELETE FROM kenan_users WHERE name = ?').run(req.params.name)
+  res.json({ success: true })
+})
+
 // ===================== GİRİŞ LOGU =====================
 
 router.get('/login-log', (_req, res) => {

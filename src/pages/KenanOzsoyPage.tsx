@@ -265,16 +265,44 @@ function LoginPanel({ currentUser, currentRole, onUserChange }: { currentUser: s
           </div>
         )}
 
-        {/* Register form (admin only) */}
+        {/* Register form + user list (admin only) */}
         {mode === 'register' && isAdmin && (
-          <div className="flex items-center gap-2 bg-[--color-slate] border border-[--color-graphite] rounded-lg p-2">
-            <input value={regName} onChange={e => setRegName(e.target.value)} placeholder="Kullanıcı adı" className={`${smallInput} w-32`} />
-            <input type="password" value={regPass} onChange={e => setRegPass(e.target.value)} placeholder="Şifre" className={`${smallInput} w-24`} />
-            <input type="password" value={regPassConfirm} onChange={e => setRegPassConfirm(e.target.value)} placeholder="Tekrar"
-              onKeyDown={e => e.key === 'Enter' && handleRegister()} className={`${smallInput} w-24`} />
-            <button onClick={handleRegister} className="px-3 py-1.5 rounded-lg bg-emerald-500 text-white text-xs font-medium">Kayıt</button>
-            <button onClick={() => setMode('idle')} className="text-[--color-text-muted]"><X size={14} /></button>
+          <div className="bg-[--color-slate] border border-[--color-graphite] rounded-lg p-3 space-y-3">
+            <div className="flex items-center gap-2">
+              <input value={regName} onChange={e => setRegName(e.target.value)} placeholder="Kullanıcı adı" className={`${smallInput} w-32`} />
+              <input type="password" value={regPass} onChange={e => setRegPass(e.target.value)} placeholder="Şifre" className={`${smallInput} w-24`} />
+              <input type="password" value={regPassConfirm} onChange={e => setRegPassConfirm(e.target.value)} placeholder="Tekrar"
+                onKeyDown={e => e.key === 'Enter' && handleRegister()} className={`${smallInput} w-24`} />
+              <button onClick={handleRegister} className="px-3 py-1.5 rounded-lg bg-emerald-500 text-white text-xs font-medium">Ekle</button>
+              <button onClick={() => setMode('idle')} className="text-[--color-text-muted]"><X size={14} /></button>
+            </div>
             {error && <span className="text-xs text-red-400">{error}</span>}
+            <div className="border-t border-[--color-graphite] pt-2">
+              <div className="text-[10px] text-[--color-text-muted] mb-1">Mevcut Kullanıcılar</div>
+              <div className="space-y-1">
+                {users.map((u: any) => (
+                  <div key={u.id} className="flex items-center justify-between text-xs bg-[--color-steel] rounded px-2 py-1.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[--color-text-primary] font-medium">{u.name}</span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${u.role === 'admin' ? 'bg-copper/10 text-copper' : 'bg-info/10 text-info'}`}>
+                        {u.role === 'admin' ? 'Admin' : 'Kullanıcı'}
+                      </span>
+                    </div>
+                    {u.name !== currentUser && (
+                      <button onClick={async () => {
+                        if (!confirm(`"${u.name}" kullanıcısını silmek istediğinize emin misiniz?`)) return
+                        try {
+                          await api.kenanDeleteUser(u.name, currentUser)
+                          load()
+                        } catch (err: any) { setError(err.message) }
+                      }} className="text-red-400 hover:text-red-300">
+                        <Trash2 size={12} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 

@@ -24,6 +24,7 @@ export const api = {
   kenanRegister: (name: string, password: string, admin_user?: string) => request<any>('/kenan/users/register', { method: 'POST', body: JSON.stringify({ name, password, admin_user }) }),
   kenanSetPassword: (name: string, password: string) => request<any>('/kenan/users/set-password', { method: 'POST', body: JSON.stringify({ name, password }) }),
   kenanChangePassword: (name: string, old_password: string, new_password: string) => request<any>('/kenan/users/change-password', { method: 'PUT', body: JSON.stringify({ name, old_password, new_password }) }),
+  kenanDeleteUser: (name: string, admin_user: string) => request<any>(`/kenan/users/${encodeURIComponent(name)}?admin_user=${admin_user}`, { method: 'DELETE' }),
 
   // Login
   kenanGetLoginLog: () => request<any[]>('/kenan/login-log'),
