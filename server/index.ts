@@ -2,7 +2,7 @@ import express from 'express'
 import cors from 'cors'
 import path from 'path'
 import fs from 'fs'
-import { randomUUID } from 'crypto'
+import { randomUUID, createHash } from 'crypto'
 import { initSchema } from './db/schema'
 import { getDb } from './db/schema'
 import kenanRoutes from './routes/kenan'
@@ -49,6 +49,21 @@ function autoSeed() {
     insertSiparis.run(randomUUID(), s.tarih, s.fatura_no || null, s.musteri, s.siparis_no || null, s.tutar, s.kur || null, (s.doviz || 'EUR').toUpperCase(), s.tutar_eur || s.tutar, s.vade_gun || null, 'beklemede')
   }
   console.log(`Seeded ${data.odemeler.length} ödemeler + ${data.siparisler.length} siparişler`)
+
+  // Seed default users
+  const hash = (pw: string) => createHash('sha256').update(pw).digest('hex')
+  const userCount = db.prepare('SELECT COUNT(*) as c FROM kenan_users').get() as any
+  if (userCount.c === 0) {
+    const defaultUsers = [
+      { name: 'MeKansiz', password: '1234', role: 'admin' },
+      { name: 'Kenan', password: '1234', role: 'user' },
+    ]
+    const insertUser = db.prepare('INSERT INTO kenan_users (id, name, password_hash, role) VALUES (?, ?, ?, ?)')
+    for (const u of defaultUsers) {
+      insertUser.run(randomUUID(), u.name, hash(u.password), u.role)
+    }
+    console.log(`Seeded ${defaultUsers.length} default users`)
+  }
 }
 autoSeed()
 

@@ -59,23 +59,31 @@ router.get('/tcmb-kur', async (req, res) => {
 
 router.get('/users', (_req, res) => {
   const db = getDb()
-  const users = db.prepare('SELECT id, name, created_at FROM kenan_users ORDER BY name').all()
+  const users = db.prepare('SELECT id, name, role, created_at FROM kenan_users ORDER BY name').all()
   res.json(users)
 })
 
-// Kayıt ol (şifre ile)
+// Admin kullanıcı ekleme (sadece admin yapabilir)
 router.post('/users/register', (req, res) => {
   const db = getDb()
-  const { name, password } = req.body
+  const { name, password, admin_user } = req.body
   if (!name || !password) return res.status(400).json({ message: 'İsim ve şifre gerekli' })
   if (password.length < 4) return res.status(400).json({ message: 'Şifre en az 4 karakter olmalı' })
+
+  // Admin yetki kontrolü
+  if (admin_user) {
+    const admin = db.prepare('SELECT role FROM kenan_users WHERE name = ?').get(admin_user) as any
+    if (!admin || admin.role !== 'admin') return res.status(403).json({ message: 'Bu işlem için admin yetkisi gerekli' })
+  } else {
+    return res.status(403).json({ message: 'Admin yetkisi gerekli' })
+  }
 
   const existing = db.prepare('SELECT id FROM kenan_users WHERE name = ?').get(name) as any
   if (existing) return res.status(400).json({ message: 'Bu kullanıcı adı zaten mevcut' })
 
   const id = randomUUID()
   const hash = hashPassword(password)
-  db.prepare('INSERT INTO kenan_users (id, name, password_hash) VALUES (?, ?, ?)').run(id, name, hash)
+  db.prepare('INSERT INTO kenan_users (id, name, password_hash, role) VALUES (?, ?, ?, ?)').run(id, name, hash, 'user')
   res.json({ id, name })
 })
 
@@ -130,7 +138,7 @@ router.post('/login', (req, res) => {
 
   const id = randomUUID()
   db.prepare('INSERT INTO kenan_login_log (id, user_name) VALUES (?, ?)').run(id, user_name)
-  res.json({ success: true, user_name })
+  res.json({ success: true, user_name, role: user.role || 'user' })
 })
 
 // ===================== AUDIT LOG =====================

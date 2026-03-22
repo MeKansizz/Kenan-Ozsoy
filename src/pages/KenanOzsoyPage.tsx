@@ -90,10 +90,11 @@ function useKur() {
 }
 
 // ==================== LOGIN PANEL ====================
-function LoginPanel({ currentUser, onUserChange }: { currentUser: string; onUserChange: (u: string) => void }) {
+function LoginPanel({ currentUser, currentRole, onUserChange }: { currentUser: string; currentRole: string; onUserChange: (u: string, role: string) => void }) {
   const [users, setUsers] = useState<any[]>([])
   const [loginLog, setLoginLog] = useState<any[]>([])
   const [mode, setMode] = useState<'idle' | 'login' | 'register' | 'changepass' | 'setpass'>('idle')
+  const isAdmin = currentRole === 'admin'
   const [loginName, setLoginName] = useState('')
   const [loginPass, setLoginPass] = useState('')
   const [regName, setRegName] = useState('')
@@ -117,9 +118,11 @@ function LoginPanel({ currentUser, onUserChange }: { currentUser: string; onUser
   const handleLogin = async () => {
     setError('')
     try {
-      await api.kenanLogin(loginName, loginPass)
-      onUserChange(loginName)
+      const result = await api.kenanLogin(loginName, loginPass)
+      const role = result?.role || 'user'
+      onUserChange(loginName, role)
       localStorage.setItem('kenan_current_user', loginName)
+      localStorage.setItem('kenan_current_role', role)
       setLoginName(''); setLoginPass('')
       setMode('idle')
       load()
@@ -142,9 +145,11 @@ function LoginPanel({ currentUser, onUserChange }: { currentUser: string; onUser
     try {
       await api.kenanSetPassword(setPassName, setPassVal)
       // Otomatik giriş yap
-      await api.kenanLogin(setPassName, setPassVal)
-      onUserChange(setPassName)
+      const loginResult = await api.kenanLogin(setPassName, setPassVal)
+      const loginRole = loginResult?.role || 'user'
+      onUserChange(setPassName, loginRole)
       localStorage.setItem('kenan_current_user', setPassName)
+      localStorage.setItem('kenan_current_role', loginRole)
       setSetPassName(''); setSetPassVal(''); setSetPassConfirm('')
       setMode('idle')
       load()
@@ -157,7 +162,7 @@ function LoginPanel({ currentUser, onUserChange }: { currentUser: string; onUser
     setError('')
     if (regPass !== regPassConfirm) { setError('Şifreler eşleşmiyor'); return }
     try {
-      await api.kenanRegister(regName, regPass)
+      await api.kenanRegister(regName, regPass, currentUser)
       setRegName(''); setRegPass(''); setRegPassConfirm('')
       setMode('idle')
       load()
@@ -179,8 +184,9 @@ function LoginPanel({ currentUser, onUserChange }: { currentUser: string; onUser
   }
 
   const handleLogout = () => {
-    onUserChange('')
+    onUserChange('', '')
     localStorage.removeItem('kenan_current_user')
+    localStorage.removeItem('kenan_current_role')
   }
 
   const smallInput = "px-2 py-1.5 rounded-lg bg-[--color-steel] border border-[--color-graphite] text-sm text-[--color-text-primary] focus:outline-none focus:border-copper"
@@ -223,6 +229,12 @@ function LoginPanel({ currentUser, onUserChange }: { currentUser: string; onUser
               className="px-3 py-2 rounded-lg border border-[--color-graphite] text-[--color-text-muted] text-xs hover:bg-[--color-steel]">
               Şifre Değiştir
             </button>
+            {isAdmin && (
+              <button onClick={() => { setMode(mode === 'register' ? 'idle' : 'register'); setError('') }}
+                className="px-3 py-2 rounded-lg border border-emerald-400/30 text-emerald-400 text-xs hover:bg-emerald-400/10">
+                <Users size={12} className="inline mr-1" />Kullanıcı Ekle
+              </button>
+            )}
             <button onClick={handleLogout}
               className="px-3 py-2 rounded-lg border border-red-400/30 text-red-400 text-xs hover:bg-red-400/10">
               Çıkış
@@ -234,10 +246,6 @@ function LoginPanel({ currentUser, onUserChange }: { currentUser: string; onUser
             <button onClick={() => { setMode('login'); setError('') }}
               className="px-3 py-2 rounded-lg bg-copper text-white text-xs font-medium hover:bg-copper-dark">
               Giriş Yap
-            </button>
-            <button onClick={() => { setMode('register'); setError('') }}
-              className="px-3 py-2 rounded-lg border border-[--color-graphite] text-[--color-text-secondary] text-xs hover:bg-[--color-steel]">
-              <Users size={12} className="inline mr-1" />Kayıt Ol
             </button>
           </div>
         )}
@@ -257,8 +265,8 @@ function LoginPanel({ currentUser, onUserChange }: { currentUser: string; onUser
           </div>
         )}
 
-        {/* Register form */}
-        {mode === 'register' && !currentUser && (
+        {/* Register form (admin only) */}
+        {mode === 'register' && isAdmin && (
           <div className="flex items-center gap-2 bg-[--color-slate] border border-[--color-graphite] rounded-lg p-2">
             <input value={regName} onChange={e => setRegName(e.target.value)} placeholder="Kullanıcı adı" className={`${smallInput} w-32`} />
             <input type="password" value={regPass} onChange={e => setRegPass(e.target.value)} placeholder="Şifre" className={`${smallInput} w-24`} />
@@ -958,6 +966,12 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
 export function KenanOzsoyPage() {
   const [tab, setTab] = useState<'cari' | 'siparis'>('cari')
   const [currentUser, setCurrentUser] = useState(() => localStorage.getItem('kenan_current_user') || '')
+  const [currentRole, setCurrentRole] = useState(() => localStorage.getItem('kenan_current_role') || '')
+
+  const handleUserChange = (user: string, role: string) => {
+    setCurrentUser(user)
+    setCurrentRole(role)
+  }
 
   return (
     <div className="space-y-6">
@@ -970,7 +984,7 @@ export function KenanOzsoyPage() {
       </div>
 
       {/* Login Panel - sol üst */}
-      <LoginPanel currentUser={currentUser} onUserChange={setCurrentUser} />
+      <LoginPanel currentUser={currentUser} currentRole={currentRole} onUserChange={handleUserChange} />
 
       {/* Tabs */}
       <div className="flex gap-1 bg-[--color-steel] rounded-lg p-1 w-fit">

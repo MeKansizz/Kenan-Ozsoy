@@ -56,6 +56,7 @@ export function initSchema() {
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL UNIQUE,
       password_hash TEXT,
+      role TEXT DEFAULT 'user',
       created_at TEXT DEFAULT (datetime('now'))
     );
 
@@ -80,5 +81,10 @@ export function initSchema() {
   const cols = db.prepare("PRAGMA table_info(kenan_odemeler)").all() as any[]
   if (!cols.find((c: any) => c.name === 'doviz')) {
     db.exec("ALTER TABLE kenan_odemeler ADD COLUMN doviz TEXT DEFAULT 'TL'")
+  }
+  // Migration: add role column to users if missing
+  const userCols = db.prepare("PRAGMA table_info(kenan_users)").all() as any[]
+  if (!userCols.find((c: any) => c.name === 'role')) {
+    db.exec("ALTER TABLE kenan_users ADD COLUMN role TEXT DEFAULT 'user'")
   }
 }

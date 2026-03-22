@@ -21,7 +21,7 @@ export const api = {
 
   // Kullanicilar
   kenanGetUsers: () => request<any[]>('/kenan/users'),
-  kenanRegister: (name: string, password: string) => request<any>('/kenan/users/register', { method: 'POST', body: JSON.stringify({ name, password }) }),
+  kenanRegister: (name: string, password: string, admin_user?: string) => request<any>('/kenan/users/register', { method: 'POST', body: JSON.stringify({ name, password, admin_user }) }),
   kenanSetPassword: (name: string, password: string) => request<any>('/kenan/users/set-password', { method: 'POST', body: JSON.stringify({ name, password }) }),
   kenanChangePassword: (name: string, old_password: string, new_password: string) => request<any>('/kenan/users/change-password', { method: 'PUT', body: JSON.stringify({ name, old_password, new_password }) }),
 
