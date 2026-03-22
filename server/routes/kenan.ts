@@ -221,21 +221,24 @@ router.get('/odemeler/summary', (_req, res) => {
 router.post('/odemeler', (req, res) => {
   const db = getDb()
   const id = randomUUID()
-  const { tarih, odeme_adi, tl_tutar, tutar_eur, kur, durum, donem, notlar, user } = req.body
+  const { tarih, odeme_adi, tl_tutar, tutar_eur, kur, doviz, durum, donem, notlar, user } = req.body
 
-  // TL girildi → EUR = TL / kur
+  // Currency-aware EUR calculation
   let finalEur = tutar_eur || 0
   let finalTl = tl_tutar || 0
-  if (tl_tutar && kur && !tutar_eur) {
-    finalEur = Math.round((tl_tutar / kur) * 100) / 100
+  const currency = (doviz || 'TL').toUpperCase()
+  if (currency === 'EUR') {
+    finalEur = finalTl
+  } else if (finalTl && kur && !tutar_eur) {
+    finalEur = Math.round((finalTl / kur) * 100) / 100
   }
-  const tl_karsiligi = finalTl || (kur ? finalEur * kur : 0)
+  const tl_karsiligi = currency === 'TL' ? finalTl : (kur ? finalEur * kur : 0)
   const now = new Date().toISOString()
 
   db.prepare(`
-    INSERT INTO kenan_odemeler (id, tarih, odeme_adi, tl_tutar, tutar_eur, kur, tl_karsiligi, durum, donem, notlar, updated_by, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(id, tarih, odeme_adi, finalTl, finalEur, kur || null, tl_karsiligi || null, durum || 'beklemede', donem || null, notlar || null, user || null, now)
+    INSERT INTO kenan_odemeler (id, tarih, odeme_adi, tl_tutar, tutar_eur, kur, doviz, tl_karsiligi, durum, donem, notlar, updated_by, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(id, tarih, odeme_adi, finalTl, finalEur, kur || null, currency, tl_karsiligi || null, durum || 'beklemede', donem || null, notlar || null, user || null, now)
 
   logAudit('kenan_odemeler', id, 'create', { tarih, odeme_adi, tl_tutar: finalTl, tutar_eur: finalEur, kur, durum }, user || 'system')
   res.json({ id })
@@ -243,7 +246,7 @@ router.post('/odemeler', (req, res) => {
 
 router.put('/odemeler/:id', (req, res) => {
   const db = getDb()
-  const { tarih, odeme_adi, tl_tutar, tutar_eur, kur, durum, donem, notlar, user } = req.body
+  const { tarih, odeme_adi, tl_tutar, tutar_eur, kur, doviz, durum, donem, notlar, user } = req.body
 
   // Get old values for audit
   const old = db.prepare('SELECT * FROM kenan_odemeler WHERE id = ?').get(req.params.id) as any
@@ -251,16 +254,19 @@ router.put('/odemeler/:id', (req, res) => {
 
   let finalEur = tutar_eur || 0
   let finalTl = tl_tutar || 0
-  if (tl_tutar && kur && !tutar_eur) {
-    finalEur = Math.round((tl_tutar / kur) * 100) / 100
+  const currency = (doviz || 'TL').toUpperCase()
+  if (currency === 'EUR') {
+    finalEur = finalTl
+  } else if (finalTl && kur && !tutar_eur) {
+    finalEur = Math.round((finalTl / kur) * 100) / 100
   }
-  const tl_karsiligi = finalTl || (kur ? finalEur * kur : 0)
+  const tl_karsiligi = currency === 'TL' ? finalTl : (kur ? finalEur * kur : 0)
   const now = new Date().toISOString()
 
   db.prepare(`
-    UPDATE kenan_odemeler SET tarih=?, odeme_adi=?, tl_tutar=?, tutar_eur=?, kur=?, tl_karsiligi=?, durum=?, donem=?, notlar=?, updated_by=?, updated_at=?
+    UPDATE kenan_odemeler SET tarih=?, odeme_adi=?, tl_tutar=?, tutar_eur=?, kur=?, doviz=?, tl_karsiligi=?, durum=?, donem=?, notlar=?, updated_by=?, updated_at=?
     WHERE id=?
-  `).run(tarih, odeme_adi, finalTl, finalEur, kur || null, tl_karsiligi || null, durum || 'beklemede', donem || null, notlar || null, user || null, now, req.params.id)
+  `).run(tarih, odeme_adi, finalTl, finalEur, kur || null, currency, tl_karsiligi || null, durum || 'beklemede', donem || null, notlar || null, user || null, now, req.params.id)
 
   // Build changes diff
   const changes: Record<string, { old: any; new: any }> = {}

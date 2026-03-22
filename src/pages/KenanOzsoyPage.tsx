@@ -490,7 +490,7 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
   const { fetchKur } = useKur()
 
   const [odemeForm, setOdemeForm] = useState({
-    tarih: new Date().toISOString().slice(0, 10), odeme_adi: '', tl_tutar: '', tutar_eur: '', kur: '', durum: 'beklemede', donem: '', notlar: ''
+    tarih: new Date().toISOString().slice(0, 10), odeme_adi: '', tl_tutar: '', tutar_eur: '', kur: '', doviz: 'TL', durum: 'beklemede', donem: '', notlar: ''
   })
   const [siparisForm, setSiparisForm] = useState({
     tarih: new Date().toISOString().slice(0, 10), fatura_no: '', musteri: '', siparis_no: '', tutar: '', kur: '', doviz: 'EUR', vade_gun: '', durum: 'beklemede', notlar: ''
@@ -504,11 +504,20 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
 
   useEffect(() => { loadAll() }, [])
 
-  // Auto-fetch kur when date changes in ödeme form
-  const fetchOdemeKur = async (date: string) => {
+  // Auto-fetch kur when date or doviz changes in ödeme form
+  const fetchOdemeKur = async (date: string, doviz?: string) => {
+    const d = doviz || odemeForm.doviz || 'TL'
+    if (d === 'EUR') {
+      setOdemeForm(p => ({ ...p, kur: '1' }))
+      return
+    }
     const rates = await fetchKur(date)
     if (rates) {
-      setOdemeForm(p => ({ ...p, kur: String(rates.eur) }))
+      if (d === 'USD') {
+        setOdemeForm(p => ({ ...p, kur: String(rates.usd) }))
+      } else {
+        setOdemeForm(p => ({ ...p, kur: String(rates.eur) }))
+      }
     }
   }
 
@@ -519,13 +528,16 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
     }
   }
 
-  // Compute EUR from TL when kur or tl_tutar changes
+  // Compute EUR based on currency type
   const computedEur = useMemo(() => {
-    const tl = parseFloat(odemeForm.tl_tutar) || 0
+    const tutar = parseFloat(odemeForm.tl_tutar) || 0
     const kur = parseFloat(odemeForm.kur) || 0
-    if (tl > 0 && kur > 0) return Math.round((tl / kur) * 100) / 100
-    return 0
-  }, [odemeForm.tl_tutar, odemeForm.kur])
+    if (tutar <= 0) return 0
+    const d = odemeForm.doviz || 'TL'
+    if (d === 'EUR') return tutar
+    if (kur <= 0) return 0
+    return Math.round((tutar / kur) * 100) / 100
+  }, [odemeForm.tl_tutar, odemeForm.kur, odemeForm.doviz])
 
   const odemeSummary = useMemo(() => {
     const toplam = odemeler.reduce((s, o) => s + o.tutar_eur, 0)
@@ -566,7 +578,7 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
 
   // Ödeme handlers
   const resetOdemeForm = () => {
-    setOdemeForm({ tarih: new Date().toISOString().slice(0, 10), odeme_adi: '', tl_tutar: '', tutar_eur: '', kur: '', durum: 'beklemede', donem: '', notlar: '' })
+    setOdemeForm({ tarih: new Date().toISOString().slice(0, 10), odeme_adi: '', tl_tutar: '', tutar_eur: '', kur: '', doviz: 'TL', durum: 'beklemede', donem: '', notlar: '' })
     setEditOdemeId(null)
     setShowOdemeForm(false)
   }
@@ -575,8 +587,8 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
     const data = {
       ...odemeForm,
       tl_tutar: parseFloat(odemeForm.tl_tutar) || 0,
-      tutar_eur: parseFloat(odemeForm.tutar_eur) || computedEur || 0,
-      kur: parseFloat(odemeForm.kur) || null,
+      tutar_eur: computedEur || parseFloat(odemeForm.tutar_eur) || 0,
+      kur: odemeForm.doviz === 'EUR' ? 1 : (parseFloat(odemeForm.kur) || null),
       user: currentUser,
     }
     if (editOdemeId) await api.kenanUpdateOdeme(editOdemeId, data)
@@ -591,6 +603,7 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
       tl_tutar: o.tl_tutar ? String(o.tl_tutar) : '',
       tutar_eur: o.tutar_eur ? String(o.tutar_eur) : '',
       kur: o.kur ? String(o.kur) : '',
+      doviz: (o as any).doviz || 'TL',
       durum: o.durum, donem: o.donem || '', notlar: o.notlar || ''
     })
     setEditOdemeId(o.id)
@@ -660,7 +673,7 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-[--color-text-muted] mb-1 block">Tarih</label>
-              <input type="date" value={odemeForm.tarih} onChange={e => { setOdemeForm(p => ({ ...p, tarih: e.target.value })); fetchOdemeKur(e.target.value) }} className={inputCls} />
+              <input type="date" value={odemeForm.tarih} onChange={e => { setOdemeForm(p => ({ ...p, tarih: e.target.value })); fetchOdemeKur(e.target.value, odemeForm.doviz) }} className={inputCls} />
               {odemeForm.tarih && <div className="mt-1 text-[10px] font-medium text-copper bg-copper/10 px-2 py-0.5 rounded w-fit">Hafta {getWeekNumber(odemeForm.tarih)}</div>}
             </div>
             <div>
@@ -668,14 +681,24 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
               <input value={odemeForm.odeme_adi} onChange={e => setOdemeForm(p => ({ ...p, odeme_adi: e.target.value }))} placeholder="Firma/Kişi" className={inputCls} />
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-4 gap-3">
             <div>
-              <label className="text-xs text-[--color-text-muted] mb-1 block">TL Tutar</label>
-              <input type="number" step="0.01" value={odemeForm.tl_tutar} onChange={e => setOdemeForm(p => ({ ...p, tl_tutar: e.target.value, tutar_eur: '' }))} placeholder="₺ tutar" className={inputCls} />
+              <label className="text-xs text-[--color-text-muted] mb-1 block">Tutar</label>
+              <input type="number" step="0.01" value={odemeForm.tl_tutar} onChange={e => setOdemeForm(p => ({ ...p, tl_tutar: e.target.value, tutar_eur: '' }))} placeholder="Tutar girin" className={inputCls} />
             </div>
             <div>
-              <label className="text-xs text-[--color-text-muted] mb-1 block">Kur (EUR/TRY) <span className="text-copper">TCMB</span></label>
-              <input type="number" step="0.0001" value={odemeForm.kur} onChange={e => setOdemeForm(p => ({ ...p, kur: e.target.value }))} placeholder="Otomatik" className={inputCls} />
+              <label className="text-xs text-[--color-text-muted] mb-1 block">Para Birimi</label>
+              <select value={odemeForm.doviz} onChange={e => { const d = e.target.value; setOdemeForm(p => ({ ...p, doviz: d })); fetchOdemeKur(odemeForm.tarih, d) }} className={inputCls}>
+                <option value="TL">₺ TL</option>
+                <option value="EUR">€ EUR</option>
+                <option value="USD">$ USD</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-[--color-text-muted] mb-1 block">
+                Kur {odemeForm.doviz === 'EUR' ? '' : odemeForm.doviz === 'USD' ? '(EUR/USD)' : '(EUR/TL)'} <span className="text-copper">TCMB</span>
+              </label>
+              <input type="number" step="0.0001" value={odemeForm.kur} onChange={e => setOdemeForm(p => ({ ...p, kur: e.target.value }))} placeholder={odemeForm.doviz === 'EUR' ? '1' : 'Otomatik'} disabled={odemeForm.doviz === 'EUR'} className={`${inputCls} ${odemeForm.doviz === 'EUR' ? 'opacity-50' : ''}`} />
             </div>
             <div>
               <label className="text-xs text-[--color-text-muted] mb-1 block">EUR Karşılığı</label>
@@ -777,7 +800,7 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
         <div className="grid grid-cols-2">
           <div className="flex items-center justify-between px-4 py-3 border-b border-[--color-graphite] border-r border-r-[--color-graphite]">
             <h3 className="text-sm font-semibold text-copper">ÖDEMELER (TL → EUR)</h3>
-            <button onClick={() => { resetOdemeForm(); setShowOdemeForm(true); fetchOdemeKur(new Date().toISOString().slice(0, 10)) }}
+            <button onClick={() => { resetOdemeForm(); setShowOdemeForm(true); fetchOdemeKur(new Date().toISOString().slice(0, 10), 'TL') }}
               disabled={!currentUser}
               className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-copper text-white text-xs font-medium hover:bg-copper-dark disabled:opacity-50">
               <Plus size={12} /> Ekle

@@ -24,6 +24,7 @@ export function initSchema() {
       tl_tutar REAL DEFAULT 0,
       tutar_eur REAL DEFAULT 0,
       kur REAL,
+      doviz TEXT DEFAULT 'TL',
       tl_karsiligi REAL,
       durum TEXT DEFAULT 'beklemede',
       donem TEXT,
@@ -74,4 +75,10 @@ export function initSchema() {
       changed_at TEXT DEFAULT (datetime('now'))
     );
   `)
+
+  // Migration: add doviz column to odemeler if missing
+  const cols = db.prepare("PRAGMA table_info(kenan_odemeler)").all() as any[]
+  if (!cols.find((c: any) => c.name === 'doviz')) {
+    db.exec("ALTER TABLE kenan_odemeler ADD COLUMN doviz TEXT DEFAULT 'TL'")
+  }
 }
