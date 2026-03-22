@@ -12,6 +12,14 @@ function formatEur(val: number): string {
 function formatTl(val: number): string {
   return new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val) + ' ₺'
 }
+function formatKur(val: number | null | undefined): string {
+  if (!val) return '-'
+  return new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 4, maximumFractionDigits: 4 }).format(val)
+}
+function formatNum(val: number | null | undefined, decimals = 2): string {
+  if (val === null || val === undefined) return '-'
+  return new Intl.NumberFormat('tr-TR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(val)
+}
 function formatDate(dateStr: string): string {
   if (!dateStr) return '-'
   const parts = dateStr.split('-')
@@ -415,7 +423,7 @@ function CariSection({ currentUser }: { currentUser: string }) {
                   <td className="px-3 py-2 text-sm text-[--color-text-secondary]">{e.referans || '-'}</td>
                   <td className="px-3 py-2 text-right text-sm font-mono text-emerald-400">{e.giren_eur > 0 ? maskedEur(e.giren_eur, loggedIn) : '-'}</td>
                   <td className="px-3 py-2 text-right text-sm font-mono text-copper">{e.cikan_eur > 0 ? maskedEur(e.cikan_eur, loggedIn) : '-'}</td>
-                  <td className="px-3 py-2 text-right text-sm font-mono text-[--color-text-muted]">{loggedIn ? (e.kur || '-') : '****'}</td>
+                  <td className="px-3 py-2 text-right text-sm font-mono text-[--color-text-muted]">{loggedIn ? formatKur(e.kur) : '****'}</td>
                   <td className="px-3 py-2 text-right">
                     <span className={`text-sm font-mono font-semibold ${runningBalances[idx] >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
                       {maskedEur(Math.abs(runningBalances[idx]), loggedIn)}
@@ -846,7 +854,7 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
                           <div className="px-2 py-2 text-sm text-[--color-text-primary] truncate">{formatDate(o.tarih)}</div>
                           <div className="px-2 py-2 text-sm text-[--color-text-primary] truncate">{o.odeme_adi}</div>
                           <div className="px-2 py-2 text-right text-sm font-mono text-[--color-text-secondary] truncate">{o.tl_tutar ? maskedTl(o.tl_tutar, loggedIn) : '-'}</div>
-                          <div className="px-2 py-2 text-right text-xs font-mono text-[--color-text-muted]">{loggedIn ? (o.kur || '-') : '****'}</div>
+                          <div className="px-2 py-2 text-right text-xs font-mono text-[--color-text-muted]">{loggedIn ? formatKur(o.kur) : '****'}</div>
                           <div className="px-2 py-2 text-right text-sm font-mono text-copper truncate">{maskedEur(o.tutar_eur, loggedIn)}</div>
                           <div className="px-2 py-2 text-center">
                             <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${o.durum === 'tamamlandi' ? 'bg-emerald-400/10 text-emerald-400' : 'bg-amber-400/10 text-amber-400'}`}>
