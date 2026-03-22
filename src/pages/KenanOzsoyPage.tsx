@@ -981,6 +981,10 @@ export function KenanOzsoyPage() {
           <h1 className="text-2xl font-bold text-[--color-text-primary] font-display">Kayteks - Kenan Özsoy</h1>
           <p className="text-sm text-[--color-text-muted] mt-1">Cari hesap ve nakit akış takibi</p>
         </div>
+        <div className="text-right text-[10px] text-[--color-text-muted] font-mono bg-[--color-slate] border border-[--color-graphite] rounded-lg px-3 py-2">
+          <div>Deploy: {new Date((window as any).__BUILD_TIME__ || __BUILD_TIME__).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+          <div className="text-copper">#{__COMMIT_HASH__}</div>
+        </div>
       </div>
 
       {/* Login Panel - sol üst */}
