@@ -883,9 +883,14 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
                           <div className="px-2 py-2 text-right text-xs font-mono text-[--color-text-muted]">{loggedIn ? formatKur(o.kur) : '****'}</div>
                           <div className="px-2 py-2 text-right text-sm font-mono text-copper truncate">{maskedEur(o.tutar_eur, loggedIn)}</div>
                           <div className="px-2 py-2 text-center">
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${o.durum === 'tamamlandi' ? 'bg-emerald-400/10 text-emerald-400' : 'bg-amber-400/10 text-amber-400'}`}>
+                            <button onClick={async () => {
+                              if (!currentUser) return
+                              const newDurum = o.durum === 'tamamlandi' ? 'beklemede' : 'tamamlandi'
+                              await api.kenanUpdateOdeme(o.id, { ...o, durum: newDurum, user: currentUser })
+                              loadAll()
+                            }} className={`text-[10px] px-1.5 py-0.5 rounded-full cursor-pointer hover:opacity-80 ${o.durum === 'tamamlandi' ? 'bg-emerald-400/10 text-emerald-400' : 'bg-amber-400/10 text-amber-400'}`}>
                               {DURUM_LABELS[o.durum] || o.durum}
-                            </span>
+                            </button>
                           </div>
                           <div className="px-1 py-2 text-right text-[10px] text-[--color-text-muted] truncate">{o.updated_by || '-'}</div>
                           <div className="py-2 flex gap-0.5 justify-end">
@@ -909,9 +914,14 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
                           </div>
                           <div className="px-2 py-2 text-center text-sm text-[--color-text-muted]">{s.vade_gun ? `${s.vade_gun}g` : '-'}</div>
                           <div className="px-2 py-2 text-center">
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${s.durum === 'tamamlandi' ? 'bg-emerald-400/10 text-emerald-400' : 'bg-amber-400/10 text-amber-400'}`}>
+                            <button onClick={async () => {
+                              if (!currentUser) return
+                              const newDurum = s.durum === 'tamamlandi' ? 'beklemede' : 'tamamlandi'
+                              await api.kenanUpdateSiparis(s.id, { ...s, durum: newDurum, user: currentUser })
+                              loadAll()
+                            }} className={`text-[10px] px-1.5 py-0.5 rounded-full cursor-pointer hover:opacity-80 ${s.durum === 'tamamlandi' ? 'bg-emerald-400/10 text-emerald-400' : 'bg-amber-400/10 text-amber-400'}`}>
                               {DURUM_LABELS[s.durum] || s.durum}
-                            </span>
+                            </button>
                           </div>
                           <div className="px-1 py-2 text-right text-[10px] text-[--color-text-muted] truncate">{s.updated_by || '-'}</div>
                           <div className="py-2 flex gap-0.5 justify-end">
