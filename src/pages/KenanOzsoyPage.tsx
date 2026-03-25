@@ -4,7 +4,7 @@ import { Plus, Trash2, Edit3, X, Filter, ArrowDownCircle, ArrowUpCircle, Refresh
 
 const DURUM_OPTIONS = ['beklemede', 'tamamlandi']
 const DURUM_LABELS: Record<string, string> = { beklemede: 'Beklemede', tamamlandi: 'Tamamlandı' }
-const BASLANGIC_BAKIYE = -1492847.74
+const BASLANGIC_BAKIYE = -1565867.46
 
 function formatEur(val: number): string {
   return new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val) + ' €'
@@ -360,8 +360,9 @@ function CariSection({ currentUser }: { currentUser: string }) {
   useEffect(() => { load() }, [filters])
 
   const summary = useMemo(() => {
-    const toplam_giren = entries.reduce((s, e) => s + (e.giren_eur || 0), 0)
-    const toplam_cikan = entries.reduce((s, e) => s + (e.cikan_eur || 0), 0)
+    const tamamlananlar = entries.filter(e => e.durum === 'tamamlandi')
+    const toplam_giren = tamamlananlar.reduce((s, e) => s + (e.giren_eur || 0), 0)
+    const toplam_cikan = tamamlananlar.reduce((s, e) => s + (e.cikan_eur || 0), 0)
     const net = BASLANGIC_BAKIYE + toplam_giren - toplam_cikan
     return { toplam_giren, toplam_cikan, net }
   }, [entries])
@@ -369,7 +370,9 @@ function CariSection({ currentUser }: { currentUser: string }) {
   const runningBalances = useMemo(() => {
     let bal = BASLANGIC_BAKIYE
     return entries.map(e => {
-      bal += (e.giren_eur || 0) - (e.cikan_eur || 0)
+      if (e.durum === 'tamamlandi') {
+        bal += (e.giren_eur || 0) - (e.cikan_eur || 0)
+      }
       return bal
     })
   }, [entries])
@@ -437,7 +440,7 @@ function CariSection({ currentUser }: { currentUser: string }) {
             </thead>
             <tbody>
               <tr className="border-b border-[--color-graphite]/50 bg-[--color-steel]/30">
-                <td className="px-3 py-2 text-sm text-[--color-text-primary]">01/01/2025</td>
+                <td className="px-3 py-2 text-sm text-[--color-text-primary]">24/03/2026</td>
                 <td className="px-3 py-2"><span className="text-xs px-2 py-0.5 rounded-full bg-red-400/10 text-red-400">DEVİR</span></td>
                 <td className="px-3 py-2 text-sm font-medium text-[--color-text-primary]" colSpan={2}>Devir Bakiyesi (2025)</td>
                 <td className="px-3 py-2 text-right text-sm text-[--color-text-muted]">-</td>
@@ -448,7 +451,7 @@ function CariSection({ currentUser }: { currentUser: string }) {
                 <td></td>
               </tr>
               {entries.map((e, idx) => (
-                <tr key={`${e.kaynak}-${e.id}`} className="border-b border-[--color-graphite]/50 hover:bg-[--color-steel]/50 transition-colors">
+                <tr key={`${e.kaynak}-${e.id}`} className={`border-b border-[--color-graphite]/50 hover:bg-[--color-steel]/50 transition-colors ${e.durum === 'beklemede' ? 'opacity-50 italic' : ''}`}>
                   <td className="px-3 py-2 text-sm text-[--color-text-primary]">{formatDate(e.tarih)}</td>
                   <td className="px-3 py-2">
                     <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${e.kaynak === 'siparis' ? 'bg-info/10 text-info' : 'bg-copper/10 text-copper'}`}>
@@ -860,24 +863,24 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
 
         {/* Column headers */}
         <div className="grid grid-cols-2 border-b border-[--color-graphite]">
-          <div className="grid grid-cols-[70px_1fr_80px_45px_75px_65px_35px_28px] border-r border-[--color-graphite] px-1">
+          <div className="grid grid-cols-[70px_1fr_110px_45px_110px_65px_65px_28px] border-r border-[--color-graphite] px-1">
             <div className="px-2 py-2 text-xs text-[--color-text-muted]">Tarih</div>
             <div className="px-2 py-2 text-xs text-[--color-text-muted]">Ödeme Adı</div>
-            <div className="px-2 py-2 text-xs text-[--color-text-muted] text-right">TL</div>
-            <div className="px-2 py-2 text-xs text-[--color-text-muted] text-right">Kur</div>
-            <div className="px-2 py-2 text-xs text-[--color-text-muted] text-right">EUR</div>
+            <div className="px-2 py-2 text-xs text-[--color-text-muted] text-center">TL</div>
+            <div className="px-2 py-2 text-xs text-[--color-text-muted] text-center">Kur</div>
+            <div className="px-2 py-2 text-xs text-[--color-text-muted] text-center">EUR</div>
             <div className="px-2 py-2 text-xs text-[--color-text-muted] text-center">Durum</div>
-            <div className="px-2 py-2 text-xs text-[--color-text-muted] text-right">Kişi</div>
+            <div className="px-2 py-2 text-xs text-[--color-text-muted] text-center">Kişi</div>
             <div></div>
           </div>
-          <div className="grid grid-cols-[70px_1fr_70px_80px_40px_65px_35px_28px] px-1">
+          <div className="grid grid-cols-[70px_180px_1fr_110px_60px_65px_65px_28px] px-1">
             <div className="px-2 py-2 text-xs text-[--color-text-muted]">Tarih</div>
             <div className="px-2 py-2 text-xs text-[--color-text-muted]">Müşteri</div>
             <div className="px-2 py-2 text-xs text-[--color-text-muted]">Sipariş No</div>
-            <div className="px-2 py-2 text-xs text-[--color-text-muted] text-right">Tutar</div>
+            <div className="px-2 py-2 text-xs text-[--color-text-muted] text-center">Tutar</div>
             <div className="px-2 py-2 text-xs text-[--color-text-muted] text-center">Vade</div>
             <div className="px-2 py-2 text-xs text-[--color-text-muted] text-center">Durum</div>
-            <div className="px-2 py-2 text-xs text-[--color-text-muted] text-right">Kişi</div>
+            <div className="px-2 py-2 text-xs text-[--color-text-muted] text-center">Kişi</div>
             <div></div>
           </div>
         </div>
@@ -913,7 +916,7 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
                 return (
                   <div key={`row-${uw.key}-${i}`} className={`grid grid-cols-2 border-b border-[--color-graphite]/50 ${(o || s) ? 'hover:bg-[--color-steel]/30' : ''}`}>
                     {/* Ödeme side */}
-                    <div className={`border-r border-[--color-graphite]/30 ${o ? 'grid grid-cols-[70px_1fr_80px_45px_75px_65px_35px_28px] px-1' : ''}`}>
+                    <div className={`border-r border-[--color-graphite]/30 ${o ? 'grid grid-cols-[70px_1fr_110px_45px_110px_65px_65px_28px] px-1' : ''}`}>
                       {o ? (
                         <>
                           <div className="px-2 py-2 text-sm text-[--color-text-primary] truncate">{formatDate(o.tarih)}</div>
@@ -942,14 +945,14 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
                       )}
                     </div>
                     {/* Sipariş side */}
-                    <div className={s ? 'grid grid-cols-[70px_1fr_70px_80px_40px_65px_35px_28px] px-1' : ''}>
+                    <div className={s ? 'grid grid-cols-[70px_180px_1fr_110px_60px_65px_65px_28px] px-1' : ''}>
                       {s ? (
                         <>
                           <div className="px-2 py-2 text-sm text-[--color-text-primary] truncate">{formatDate(s.tarih)}</div>
                           <div className="px-2 py-2 text-sm text-[--color-text-primary] truncate">{s.musteri}</div>
                           <div className="px-2 py-2 text-sm text-[--color-text-secondary] truncate">{s.siparis_no || '-'}</div>
-                          <div className="px-2 py-2 text-right text-sm font-mono text-info truncate">
-                            {loggedIn ? `${new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2 }).format(s.tutar)} ${s.doviz === 'USD' ? '$' : '€'}` : '****'}
+                          <div className="px-2 py-2 text-center text-sm font-mono text-info truncate">
+                            {loggedIn ? `${new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(s.tutar)} ${s.doviz === 'USD' ? '$' : '€'}` : '****'}
                           </div>
                           <div className="px-2 py-2 text-center text-sm text-[--color-text-muted]">{s.vade_gun ? `${s.vade_gun}g` : '-'}</div>
                           <div className="px-2 py-2 text-center">
@@ -962,7 +965,7 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
                               {DURUM_LABELS[s.durum] || s.durum}
                             </button>
                           </div>
-                          <div className="px-1 py-2 text-right text-[10px] text-[--color-text-muted] truncate">{s.updated_by || '-'}</div>
+                          <div className="px-1 py-2 text-center text-[10px] text-[--color-text-muted] truncate">{s.updated_by || '-'}</div>
                           <div className="py-2 flex gap-0.5 justify-end">
                             <button onClick={() => { if (!currentUser) return; startEditSiparis(s) }} className="text-[--color-text-muted] hover:text-info"><Edit3 size={11} /></button>
                             <button onClick={async () => { if (!currentUser) return; if (confirm('Sil?')) { await api.kenanDeleteSiparis(s.id, currentUser); loadAll() } }} className="text-[--color-text-muted] hover:text-red-400"><Trash2 size={11} /></button>

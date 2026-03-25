@@ -55,8 +55,63 @@ npm run db:seed
 | Servis | Port |
 |--------|------|
 | Frontend (Vite) | 5174 |
-| Backend (Express) | 3002 |
-| Vite proxy | /api → localhost:3002 |
+| Backend (Express) | 3001 |
+| Vite proxy | /api → localhost:3001 |
+
+## Production Sunucu (Kayteks)
+
+| Bilgi | Değer |
+|-------|-------|
+| Domain | https://finans.kayteks.com |
+| Sunucu IP | 94.102.15.75 |
+| CloudPanel | https://cp.veriops.com |
+| CloudPanel Kullanıcı | kayteks |
+| CloudPanel Şifre | nDmkVKqjvNK73oogi1k8 |
+| SSH Kullanıcı | kayteks-finans |
+| SSH Şifre | CloudPanel → Ayarlar → Yeni Parola Oluştur |
+| Proje Dizini | /home/kayteks-finans/htdocs/finans.kayteks.com |
+| Port | 3001 |
+| Process Manager | PM2 (name: finans) |
+| Node.js | v18.20.8 |
+
+### Deploy (Güncelleme) Adımları
+
+```bash
+# 1. Local'de commit + push
+git add -A && git commit -m "açıklama" && git push
+
+# 2. SSH bağlan
+ssh kayteks-finans@94.102.15.75
+
+# 3. Güncelle (tek komut)
+cd ~/htdocs/finans.kayteks.com && git pull && npm run build:all && mv dist-server/index.js dist-server/index.cjs && pm2 restart finans
+```
+
+### PM2 Komutları (SSH'da)
+
+```bash
+pm2 status          # Durumu gör
+pm2 logs finans     # Logları gör
+pm2 restart finans  # Yeniden başlat
+pm2 stop finans     # Durdur
+pm2 start finans    # Başlat
+```
+
+### Render (Yedek)
+
+| Bilgi | Değer |
+|-------|-------|
+| URL | https://kenan-ozsoy.onrender.com |
+| Dashboard | https://dashboard.render.com |
+| Auto-Deploy | On Commit (git push ile otomatik) |
+
+## GitHub
+
+| Bilgi | Değer |
+|-------|-------|
+| Repo | https://github.com/MeKansizz/Kenan-Ozsoy |
+| Visibility | Public |
+| Branch | main |
 
 ## Veritabanı Şeması
 
@@ -126,7 +181,7 @@ Dark theme, CSS custom properties:
 
 ## İş Kuralları
 
-1. **Devir Bakiyesi**: 2025 yılı başlangıç borcu -1.488.421,76 € (Kayteks borçlu)
+1. **Devir Bakiyesi**: 24/03/2026 tarihi itibariyle başlangıç borcu -1.565.867,46 € (Kayteks borçlu)
 2. **Dinamik Bakiye**: Devir + Siparişler - Ödemeler
 3. **TCMB Kuru**: Tarih girilince otomatik çekilir, manuel düzenlenebilir
 4. **EUR Hesaplama**: TL tutar / kur = EUR karşılığı (ödemelerde)
