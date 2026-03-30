@@ -12,6 +12,11 @@ function formatEur(val: number): string {
 function formatTl(val: number): string {
   return new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val) + ' ₺'
 }
+function formatCurrency(val: number, doviz?: string): string {
+  const formatted = new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val)
+  const symbol = doviz === 'EUR' ? ' €' : doviz === 'USD' ? ' $' : ' ₺'
+  return formatted + symbol
+}
 function formatKur(val: number | null | undefined): string {
   if (!val) return '-'
   return new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val)
@@ -64,6 +69,9 @@ function maskedEur(val: number, loggedIn: boolean): string {
 }
 function maskedTl(val: number, loggedIn: boolean): string {
   return loggedIn ? formatTl(val) : '****'
+}
+function maskedCurrency(val: number, loggedIn: boolean, doviz?: string): string {
+  return loggedIn ? formatCurrency(val, doviz) : '****'
 }
 function maskedNum(val: string | number, loggedIn: boolean): string {
   return loggedIn ? String(val) : '****'
@@ -490,7 +498,7 @@ function CariSection({ currentUser }: { currentUser: string }) {
 
 interface Odeme {
   id: string; tarih: string; odeme_adi: string; tl_tutar: number; tutar_eur: number; kur: number;
-  tl_karsiligi: number; durum: string; donem: string; notlar: string; updated_by: string;
+  tl_karsiligi: number; doviz: string; durum: string; donem: string; notlar: string; updated_by: string;
 }
 
 interface Siparis {
@@ -728,7 +736,7 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
           </div>
           <div className="grid grid-cols-4 gap-3">
             <div>
-              <label className="text-xs text-[--color-text-muted] mb-1 block">Tutar</label>
+              <label className="text-xs text-[--color-text-muted] mb-1 block">Tutar ({odemeForm.doviz === 'EUR' ? '€' : odemeForm.doviz === 'USD' ? '$' : '₺'})</label>
               <input type="number" step="0.01" value={odemeForm.tl_tutar} onChange={e => setOdemeForm(p => ({ ...p, tl_tutar: e.target.value, tutar_eur: '' }))} placeholder="Tutar girin" className={inputCls} />
             </div>
             <div>
@@ -921,7 +929,7 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
                         <>
                           <div className="px-2 py-2 text-sm text-[--color-text-primary] truncate">{formatDate(o.tarih)}</div>
                           <div className="px-2 py-2 text-sm text-[--color-text-primary] truncate">{o.odeme_adi}</div>
-                          <div className="px-2 py-2 text-right text-sm font-mono text-[--color-text-secondary] truncate">{o.tl_tutar ? maskedTl(o.tl_tutar, loggedIn) : '-'}</div>
+                          <div className="px-2 py-2 text-right text-sm font-mono text-[--color-text-secondary] truncate">{o.tl_tutar ? maskedCurrency(o.tl_tutar, loggedIn, o.doviz) : '-'}</div>
                           <div className="px-2 py-2 text-right text-xs font-mono text-[--color-text-muted]">{loggedIn ? formatKur(o.kur) : '****'}</div>
                           <div className="px-2 py-2 text-right text-sm font-mono text-copper truncate">{maskedEur(o.tutar_eur, loggedIn)}</div>
                           <div className="px-2 py-2 text-center">

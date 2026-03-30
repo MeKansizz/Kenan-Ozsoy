@@ -32,16 +32,22 @@ function autoSeed() {
   console.log('Database empty, seeding...')
   const data = JSON.parse(fs.readFileSync(dataPath, 'utf-8'))
 
-  const insertOdeme = db.prepare(`INSERT INTO kenan_odemeler (id, tarih, odeme_adi, tl_tutar, tutar_eur, kur, tl_karsiligi, durum, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`)
+  const insertOdeme = db.prepare(`INSERT INTO kenan_odemeler (id, tarih, odeme_adi, tl_tutar, tutar_eur, kur, doviz, tl_karsiligi, durum, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`)
   for (const o of data.odemeler) {
-    const doviz = (o.doviz || '').toLowerCase()
+    let doviz = (o.doviz || '').toUpperCase()
     let tutar_eur = o.tutar_eur || 0
     let tl_tutar = o.tl || 0
     let tl_karsiligi = 0
-    if (doviz === 'eur' && o.kur === 1) { tutar_eur = tl_tutar; tl_karsiligi = 0 }
-    else if (doviz === 'usd') { tl_karsiligi = 0 }
+    // Auto-detect currency from kur if not specified
+    if (!doviz) {
+      if (o.kur === 1) doviz = 'EUR'
+      else if (o.kur > 0 && o.kur < 5) doviz = 'USD'
+      else doviz = 'TL'
+    }
+    if (doviz === 'EUR') { tutar_eur = tl_tutar; tl_karsiligi = 0 }
+    else if (doviz === 'USD') { tl_karsiligi = 0; if (o.kur > 0) tutar_eur = Math.round((tl_tutar / o.kur) * 100) / 100 }
     else { tl_karsiligi = tl_tutar; if (o.kur > 0 && tl_tutar > 0) tutar_eur = Math.round((tl_tutar / o.kur) * 100) / 100 }
-    insertOdeme.run(randomUUID(), o.tarih, o.odeme_adi, tl_tutar, tutar_eur, o.kur || 0, tl_karsiligi, 'beklemede')
+    insertOdeme.run(randomUUID(), o.tarih, o.odeme_adi, tl_tutar, tutar_eur, o.kur || 0, doviz, tl_karsiligi, 'beklemede')
   }
 
   const insertSiparis = db.prepare(`INSERT INTO kenan_siparisler (id, tarih, fatura_no, musteri, siparis_no, tutar, kur, doviz, tutar_eur, vade_gun, durum, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))`)
