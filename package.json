@@ -1,13 +1,14 @@
 {
   "name": "kenan-ozsoy",
   "version": "1.0.0",
+  "type": "module",
   "scripts": {
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
     "dev:client": "vite",
     "dev:server": "tsx watch server/index.ts",
     "build": "vite build",
-    "start": "node dist-server/index.js",
-    "build:server": "npx esbuild server/index.ts --bundle --platform=node --outfile=dist-server/index.js --external:better-sqlite3",
+    "start": "node dist-server/index.cjs",
+    "build:server": "npx esbuild server/index.ts --bundle --platform=node --outfile=dist-server/index.cjs --external:better-sqlite3",
     "build:all": "npm run build && npm run build:server",
     "db:seed": "tsx server/seed-kenan.ts"
   },

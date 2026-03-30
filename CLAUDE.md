@@ -84,7 +84,7 @@ git add -A && git commit -m "açıklama" && git push
 ssh kayteks-finans@94.102.15.75
 
 # 3. Güncelle (tek komut)
-cd ~/htdocs/finans.kayteks.com && git pull && npm run build:all && mv dist-server/index.js dist-server/index.cjs && pm2 restart finans
+cd ~/htdocs/finans.kayteks.com && git pull && npm run build:all && pm2 restart finans
 ```
 
 ### PM2 Komutları (SSH'da)

@@ -17,4 +17,4 @@ EXPOSE 3002
 ENV PORT=3002
 ENV NODE_ENV=production
 
-CMD ["node", "dist-server/index.js"]
+CMD ["node", "dist-server/index.cjs"]
