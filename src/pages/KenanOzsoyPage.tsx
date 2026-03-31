@@ -875,7 +875,7 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
 
         {/* Column headers */}
         <div className="grid grid-cols-2 border-b border-[--color-graphite]">
-          <div className="grid grid-cols-[85px_minmax(0,1fr)_120px_50px_120px_60px_50px_24px_28px] border-r border-[--color-graphite] px-1">
+          <div className="grid grid-cols-[85px_minmax(0,1fr)_120px_50px_120px_60px_50px_28px_30px] border-r border-[--color-graphite] px-1">
             <div className="px-2 py-2 text-xs text-[--color-text-muted]">Tarih</div>
             <div className="px-2 py-2 text-xs text-[--color-text-muted]">Ödeme Adı</div>
             <div className="px-2 py-2 text-xs text-[--color-text-muted] text-right">TL</div>
@@ -883,10 +883,10 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
             <div className="px-2 py-2 text-xs text-[--color-text-muted] text-right">EUR</div>
             <div className="px-2 py-2 text-xs text-[--color-text-muted] text-center">Durum</div>
             <div className="px-2 py-2 text-xs text-[--color-text-muted] text-center">Kişi</div>
-            <div className="px-1 py-2 text-xs text-[--color-text-muted] text-center" title="Hesap Dışı">HD</div>
             <div></div>
+            <div className="px-1 py-2 text-xs text-[--color-text-muted] text-center" title="Hesap Dışı">HD</div>
           </div>
-          <div className="grid grid-cols-[85px_minmax(0,1fr)_90px_90px_110px_40px_55px_45px_24px_28px] px-1">
+          <div className="grid grid-cols-[85px_minmax(0,1fr)_90px_90px_110px_40px_55px_45px_28px_30px] px-1">
             <div className="px-2 py-2 text-xs text-[--color-text-muted]">Tarih</div>
             <div className="px-2 py-2 text-xs text-[--color-text-muted]">Müşteri</div>
             <div className="px-2 py-2 text-xs text-[--color-text-muted]">Fatura No</div>
@@ -895,8 +895,8 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
             <div className="px-2 py-2 text-xs text-[--color-text-muted] text-center">Vade</div>
             <div className="px-2 py-2 text-xs text-[--color-text-muted] text-center">Durum</div>
             <div className="px-2 py-2 text-xs text-[--color-text-muted] text-center">Kişi</div>
-            <div className="px-1 py-2 text-xs text-[--color-text-muted] text-center" title="Hesap Dışı">HD</div>
             <div></div>
+            <div className="px-1 py-2 text-xs text-[--color-text-muted] text-center" title="Hesap Dışı">HD</div>
           </div>
         </div>
 
@@ -931,7 +931,7 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
                 return (
                   <div key={`row-${uw.key}-${i}`} className={`grid grid-cols-2 border-b border-[--color-graphite]/50 ${(o || s) ? 'hover:bg-[--color-steel]/30' : ''}`}>
                     {/* Ödeme side */}
-                    <div className={`border-r border-[--color-graphite]/30 ${o ? `grid grid-cols-[85px_minmax(0,1fr)_120px_50px_120px_60px_50px_24px_28px] px-1 ${o.hesap_disi ? 'opacity-40' : ''}` : ''}`}>
+                    <div className={`border-r border-[--color-graphite]/30 ${o ? `grid grid-cols-[85px_minmax(0,1fr)_120px_50px_120px_60px_50px_28px_30px] px-1 ${o.hesap_disi ? 'opacity-40' : ''}` : ''}`}>
                       {o ? (
                         <>
                           <div className="px-2 py-2 text-sm text-[--color-text-primary] whitespace-nowrap">{formatDate(o.tarih)}</div>
@@ -940,28 +940,32 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
                           <div className="px-2 py-2 text-right text-xs font-mono text-[--color-text-muted] whitespace-nowrap">{loggedIn ? formatKur(o.kur) : '****'}</div>
                           <div className="px-2 py-2 text-right text-sm font-mono text-copper whitespace-nowrap">{maskedEur(o.tutar_eur, loggedIn)}</div>
                           <div className="px-2 py-2 text-center">
-                            <button onClick={async () => {
-                              if (!currentUser) return
-                              const newDurum = o.durum === 'tamamlandi' ? 'beklemede' : 'tamamlandi'
-                              await api.kenanUpdateOdeme(o.id, { ...o, durum: newDurum, user: currentUser })
-                              loadAll()
-                            }} className={`text-[10px] px-1.5 py-0.5 rounded-full cursor-pointer hover:opacity-80 ${o.durum === 'tamamlandi' ? 'bg-emerald-400/10 text-emerald-400' : 'bg-amber-400/10 text-amber-400'}`}>
-                              {DURUM_LABELS[o.durum] || o.durum}
-                            </button>
+                            {o.hesap_disi ? (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-400">Hesap Dışı</span>
+                            ) : (
+                              <button onClick={async () => {
+                                if (!currentUser) return
+                                const newDurum = o.durum === 'tamamlandi' ? 'beklemede' : 'tamamlandi'
+                                await api.kenanUpdateOdeme(o.id, { ...o, durum: newDurum, user: currentUser })
+                                loadAll()
+                              }} className={`text-[10px] px-1.5 py-0.5 rounded-full cursor-pointer hover:opacity-80 ${o.durum === 'tamamlandi' ? 'bg-emerald-400/10 text-emerald-400' : 'bg-amber-400/10 text-amber-400'}`}>
+                                {DURUM_LABELS[o.durum] || o.durum}
+                              </button>
+                            )}
                           </div>
                           <div className="px-1 py-2 text-center text-[10px] text-[--color-text-muted] truncate">{o.updated_by || '-'}</div>
-                          <div className="px-1 py-2 text-center">
+                          <div className="py-2 flex gap-0.5 justify-end">
+                            <button onClick={() => { if (!currentUser) return; startEditOdeme(o) }} className="text-[--color-text-muted] hover:text-info"><Edit3 size={11} /></button>
+                            <button onClick={async () => { if (!currentUser) return; if (confirm('Sil?')) { await api.kenanDeleteOdeme(o.id, currentUser); loadAll() } }} className="text-[--color-text-muted] hover:text-red-400"><Trash2 size={11} /></button>
+                          </div>
+                          <div className="py-2 flex items-center justify-center">
                             <button onClick={async () => {
                               if (!currentUser) return
                               await api.kenanUpdateOdeme(o.id, { ...o, hesap_disi: o.hesap_disi ? 0 : 1, user: currentUser })
                               loadAll()
-                            }} className={`text-[10px] px-1 py-0.5 rounded cursor-pointer hover:opacity-80 ${o.hesap_disi ? 'bg-red-400/20 text-red-400' : 'bg-[--color-steel]/30 text-[--color-text-muted]'}`} title={o.hesap_disi ? 'Hesaba dahil et' : 'Hesap dışı yap'}>
-                              {o.hesap_disi ? '✗' : '·'}
+                            }} className={`w-5 h-5 rounded border-2 flex items-center justify-center cursor-pointer hover:opacity-80 transition-colors ${o.hesap_disi ? 'bg-red-500/30 border-red-400 text-red-300' : 'border-[--color-steel] text-transparent hover:border-[--color-text-muted]'}`} title={o.hesap_disi ? 'Hesaba dahil et' : 'Hesap dışı yap'}>
+                              {o.hesap_disi ? '✗' : ''}
                             </button>
-                          </div>
-                          <div className="py-2 flex gap-0.5 justify-end">
-                            <button onClick={() => { if (!currentUser) return; startEditOdeme(o) }} className="text-[--color-text-muted] hover:text-info"><Edit3 size={11} /></button>
-                            <button onClick={async () => { if (!currentUser) return; if (confirm('Sil?')) { await api.kenanDeleteOdeme(o.id, currentUser); loadAll() } }} className="text-[--color-text-muted] hover:text-red-400"><Trash2 size={11} /></button>
                           </div>
                         </>
                       ) : (
@@ -969,7 +973,7 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
                       )}
                     </div>
                     {/* Sipariş side */}
-                    <div className={s ? `grid grid-cols-[85px_minmax(0,1fr)_90px_90px_110px_40px_55px_45px_24px_28px] px-1 ${s.hesap_disi ? 'opacity-40' : ''}` : ''}>
+                    <div className={s ? `grid grid-cols-[85px_minmax(0,1fr)_90px_90px_110px_40px_55px_45px_28px_30px] px-1 ${s.hesap_disi ? 'opacity-40' : ''}` : ''}>
                       {s ? (
                         <>
                           <div className="px-2 py-2 text-sm text-[--color-text-primary] whitespace-nowrap">{formatDate(s.tarih)}</div>
@@ -981,28 +985,32 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
                           </div>
                           <div className="px-2 py-2 text-center text-sm text-[--color-text-muted]">{s.vade_gun ? `${s.vade_gun}g` : '-'}</div>
                           <div className="px-2 py-2 text-center">
-                            <button onClick={async () => {
-                              if (!currentUser) return
-                              const newDurum = s.durum === 'tamamlandi' ? 'beklemede' : 'tamamlandi'
-                              await api.kenanUpdateSiparis(s.id, { ...s, durum: newDurum, user: currentUser })
-                              loadAll()
-                            }} className={`text-[10px] px-1.5 py-0.5 rounded-full cursor-pointer hover:opacity-80 ${s.durum === 'tamamlandi' ? 'bg-emerald-400/10 text-emerald-400' : 'bg-amber-400/10 text-amber-400'}`}>
-                              {DURUM_LABELS[s.durum] || s.durum}
-                            </button>
+                            {s.hesap_disi ? (
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-400">Hesap Dışı</span>
+                            ) : (
+                              <button onClick={async () => {
+                                if (!currentUser) return
+                                const newDurum = s.durum === 'tamamlandi' ? 'beklemede' : 'tamamlandi'
+                                await api.kenanUpdateSiparis(s.id, { ...s, durum: newDurum, user: currentUser })
+                                loadAll()
+                              }} className={`text-[10px] px-1.5 py-0.5 rounded-full cursor-pointer hover:opacity-80 ${s.durum === 'tamamlandi' ? 'bg-emerald-400/10 text-emerald-400' : 'bg-amber-400/10 text-amber-400'}`}>
+                                {DURUM_LABELS[s.durum] || s.durum}
+                              </button>
+                            )}
                           </div>
                           <div className="px-1 py-2 text-center text-[10px] text-[--color-text-muted] truncate">{s.updated_by || '-'}</div>
-                          <div className="px-1 py-2 text-center">
+                          <div className="py-2 flex gap-0.5 justify-end">
+                            <button onClick={() => { if (!currentUser) return; startEditSiparis(s) }} className="text-[--color-text-muted] hover:text-info"><Edit3 size={11} /></button>
+                            <button onClick={async () => { if (!currentUser) return; if (confirm('Sil?')) { await api.kenanDeleteSiparis(s.id, currentUser); loadAll() } }} className="text-[--color-text-muted] hover:text-red-400"><Trash2 size={11} /></button>
+                          </div>
+                          <div className="py-2 flex items-center justify-center">
                             <button onClick={async () => {
                               if (!currentUser) return
                               await api.kenanUpdateSiparis(s.id, { ...s, hesap_disi: s.hesap_disi ? 0 : 1, user: currentUser })
                               loadAll()
-                            }} className={`text-[10px] px-1 py-0.5 rounded cursor-pointer hover:opacity-80 ${s.hesap_disi ? 'bg-red-400/20 text-red-400' : 'bg-[--color-steel]/30 text-[--color-text-muted]'}`} title={s.hesap_disi ? 'Hesaba dahil et' : 'Hesap dışı yap'}>
-                              {s.hesap_disi ? '✗' : '·'}
+                            }} className={`w-5 h-5 rounded border-2 flex items-center justify-center cursor-pointer hover:opacity-80 transition-colors ${s.hesap_disi ? 'bg-red-500/30 border-red-400 text-red-300' : 'border-[--color-steel] text-transparent hover:border-[--color-text-muted]'}`} title={s.hesap_disi ? 'Hesaba dahil et' : 'Hesap dışı yap'}>
+                              {s.hesap_disi ? '✗' : ''}
                             </button>
-                          </div>
-                          <div className="py-2 flex gap-0.5 justify-end">
-                            <button onClick={() => { if (!currentUser) return; startEditSiparis(s) }} className="text-[--color-text-muted] hover:text-info"><Edit3 size={11} /></button>
-                            <button onClick={async () => { if (!currentUser) return; if (confirm('Sil?')) { await api.kenanDeleteSiparis(s.id, currentUser); loadAll() } }} className="text-[--color-text-muted] hover:text-red-400"><Trash2 size={11} /></button>
                           </div>
                         </>
                       ) : (
