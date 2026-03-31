@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useCallback, Fragment } from 'react'
 import { api } from '@/lib/api'
-import { Plus, Trash2, Edit3, X, Filter, ArrowDownCircle, ArrowUpCircle, RefreshCw, Users, Clock, UserCheck } from 'lucide-react'
+import { Plus, Trash2, Edit3, X, Filter, ArrowDownCircle, ArrowUpCircle, RefreshCw, Users, Clock, UserCheck, Search } from 'lucide-react'
 
 const DURUM_OPTIONS = ['beklemede', 'tamamlandi']
 const DURUM_LABELS: Record<string, string> = { beklemede: 'Beklemede', tamamlandi: 'Tamamlandı' }
@@ -536,6 +536,8 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
   const [showSiparisForm, setShowSiparisForm] = useState(false)
   const [editOdemeId, setEditOdemeId] = useState<string | null>(null)
   const [editSiparisId, setEditSiparisId] = useState<string | null>(null)
+  const [odemeSearch, setOdemeSearch] = useState('')
+  const [siparisSearch, setSiparisSearch] = useState('')
   const { fetchKur } = useKur()
 
   const [odemeForm, setOdemeForm] = useState({
@@ -607,10 +609,36 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
 
   const dinamikBakiye = BASLANGIC_BAKIYE + siparisSummary.toplam - odemeSummary.toplam
 
+  // Filtered data for search
+  const filteredOdemeler = useMemo(() => {
+    if (!odemeSearch.trim()) return odemeler
+    const q = odemeSearch.toLowerCase()
+    return odemeler.filter(o =>
+      o.odeme_adi?.toLowerCase().includes(q) ||
+      o.tarih?.includes(q) ||
+      String(o.tl_tutar).includes(q) ||
+      String(o.tutar_eur).includes(q) ||
+      o.notlar?.toLowerCase().includes(q)
+    )
+  }, [odemeler, odemeSearch])
+
+  const filteredSiparisler = useMemo(() => {
+    if (!siparisSearch.trim()) return siparisler
+    const q = siparisSearch.toLowerCase()
+    return siparisler.filter(s =>
+      s.musteri?.toLowerCase().includes(q) ||
+      s.tarih?.includes(q) ||
+      s.siparis_no?.toLowerCase().includes(q) ||
+      s.fatura_no?.toLowerCase().includes(q) ||
+      String(s.tutar).includes(q) ||
+      s.notlar?.toLowerCase().includes(q)
+    )
+  }, [siparisler, siparisSearch])
+
   // Unified weeks: her iki tabloyu hizalamak için
   const unifiedWeeks = useMemo(() => {
-    const odemeGroups = groupByWeek(odemeler)
-    const siparisGroups = groupByWeek(siparisler)
+    const odemeGroups = groupByWeek(filteredOdemeler)
+    const siparisGroups = groupByWeek(filteredSiparisler)
     const odemeMap = new Map(odemeGroups.map(g => [`${g.year}-${g.week}`, g.items]))
     const siparisMap = new Map(siparisGroups.map(g => [`${g.year}-${g.week}`, g.items]))
     const allKeys = new Set<string>()
@@ -628,7 +656,7 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
         const si = siparisMap.get(key) || []
         return { year, week, key, odemeItems: oi as Odeme[], siparisItems: si as Siparis[], maxRows: Math.max(oi.length, si.length, 1) }
       })
-  }, [odemeler, siparisler])
+  }, [filteredOdemeler, filteredSiparisler])
 
   // Ödeme handlers
   const resetOdemeForm = () => {
@@ -857,19 +885,43 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
         <div className="grid grid-cols-2">
           <div className="flex items-center justify-between px-4 py-3 border-b border-[--color-graphite] border-r border-r-[--color-graphite]">
             <h3 className="text-sm font-semibold text-copper">ÖDEMELER (TL → EUR)</h3>
-            <button onClick={() => { resetOdemeForm(); setShowOdemeForm(true); fetchOdemeKur(new Date().toISOString().slice(0, 10), 'TL') }}
-              disabled={!currentUser}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-copper text-white text-xs font-medium hover:bg-copper-dark disabled:opacity-50">
-              <Plus size={12} /> Ekle
-            </button>
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-[--color-text-muted]" />
+                <input
+                  value={odemeSearch}
+                  onChange={e => setOdemeSearch(e.target.value)}
+                  placeholder="Ara..."
+                  className="pl-7 pr-2 py-1 text-xs rounded-lg bg-[--color-midnight] border border-[--color-graphite] text-[--color-text-primary] placeholder:text-[--color-text-muted]/50 w-36 focus:outline-none focus:border-copper"
+                />
+                {odemeSearch && <button onClick={() => setOdemeSearch('')} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[--color-text-muted] hover:text-[--color-text-primary]"><X size={10} /></button>}
+              </div>
+              <button onClick={() => { resetOdemeForm(); setShowOdemeForm(true); fetchOdemeKur(new Date().toISOString().slice(0, 10), 'TL') }}
+                disabled={!currentUser}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-copper text-white text-xs font-medium hover:bg-copper-dark disabled:opacity-50">
+                <Plus size={12} /> Ekle
+              </button>
+            </div>
           </div>
           <div className="flex items-center justify-between px-4 py-3 border-b border-[--color-graphite]">
             <h3 className="text-sm font-semibold text-info">SİPARİŞLER</h3>
-            <button onClick={() => { resetSiparisForm(); setShowSiparisForm(true); fetchSiparisKur(new Date().toISOString().slice(0, 10)) }}
-              disabled={!currentUser}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-info text-white text-xs font-medium hover:bg-info/80 disabled:opacity-50">
-              <Plus size={12} /> Ekle
-            </button>
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-[--color-text-muted]" />
+                <input
+                  value={siparisSearch}
+                  onChange={e => setSiparisSearch(e.target.value)}
+                  placeholder="Ara..."
+                  className="pl-7 pr-2 py-1 text-xs rounded-lg bg-[--color-midnight] border border-[--color-graphite] text-[--color-text-primary] placeholder:text-[--color-text-muted]/50 w-36 focus:outline-none focus:border-info"
+                />
+                {siparisSearch && <button onClick={() => setSiparisSearch('')} className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[--color-text-muted] hover:text-[--color-text-primary]"><X size={10} /></button>}
+              </div>
+              <button onClick={() => { resetSiparisForm(); setShowSiparisForm(true); fetchSiparisKur(new Date().toISOString().slice(0, 10)) }}
+                disabled={!currentUser}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-info text-white text-xs font-medium hover:bg-info/80 disabled:opacity-50">
+                <Plus size={12} /> Ekle
+              </button>
+            </div>
           </div>
         </div>
 
@@ -907,22 +959,36 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
           unifiedWeeks.map(uw => (
             <Fragment key={`uw-${uw.key}`}>
               {/* Week header row - perfectly aligned */}
+              {(() => {
+                const haftaOdeme = uw.odemeItems.filter(o => !o.hesap_disi).reduce((s, o) => s + o.tutar_eur, 0)
+                const haftaSiparis = uw.siparisItems.filter(o => !o.hesap_disi).reduce((s, o) => s + (o.tutar_eur || o.tutar), 0)
+                const denge = haftaSiparis - haftaOdeme
+                return (
               <div className="grid grid-cols-2 border-b border-[--color-graphite]/50">
                 <div className="px-3 py-1.5 bg-copper/5 border-r border-[--color-graphite]">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-copper bg-copper/10 px-2 py-0.5 rounded">H{uw.week}</span>
                     <span className="text-[10px] text-[--color-text-muted]">{getWeekDateRange(uw.year, uw.week)}</span>
-                    {uw.odemeItems.length > 0 && <span className="text-[10px] text-copper/60">{uw.odemeItems.length} ödeme · {maskedEur(uw.odemeItems.filter(o => !o.hesap_disi).reduce((s, o) => s + o.tutar_eur, 0), loggedIn)}</span>}
+                    {uw.odemeItems.length > 0 && <span className="text-[10px] text-copper/60">{uw.odemeItems.length} ödeme · {maskedEur(haftaOdeme, loggedIn)}</span>}
                   </div>
                 </div>
                 <div className="px-3 py-1.5 bg-info/5">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-info bg-info/10 px-2 py-0.5 rounded">H{uw.week}</span>
-                    <span className="text-[10px] text-[--color-text-muted]">{getWeekDateRange(uw.year, uw.week)}</span>
-                    {uw.siparisItems.length > 0 && <span className="text-[10px] text-info/60">{uw.siparisItems.length} sipariş · {maskedEur(uw.siparisItems.filter(o => !o.hesap_disi).reduce((s, o) => s + (o.tutar_eur || o.tutar), 0), loggedIn)}</span>}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-info bg-info/10 px-2 py-0.5 rounded">H{uw.week}</span>
+                      <span className="text-[10px] text-[--color-text-muted]">{getWeekDateRange(uw.year, uw.week)}</span>
+                      {uw.siparisItems.length > 0 && <span className="text-[10px] text-info/60">{uw.siparisItems.length} sipariş · {maskedEur(haftaSiparis, loggedIn)}</span>}
+                    </div>
+                    {(uw.odemeItems.length > 0 || uw.siparisItems.length > 0) && (
+                      <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${denge >= 0 ? 'bg-emerald-400/10 text-emerald-400' : 'bg-red-400/10 text-red-400'}`}>
+                        Denge: {loggedIn ? `${denge >= 0 ? '+' : ''}${new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(denge)} €` : '****'}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
+                )
+              })()}
 
               {/* Data rows - each row is a single grid spanning both sides for perfect alignment */}
               {Array.from({ length: uw.maxRows }).map((_, i) => {
