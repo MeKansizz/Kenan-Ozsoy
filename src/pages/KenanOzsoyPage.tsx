@@ -871,21 +871,22 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
 
         {/* Column headers */}
         <div className="grid grid-cols-2 border-b border-[--color-graphite]">
-          <div className="grid grid-cols-[70px_1fr_110px_45px_110px_65px_65px_28px] border-r border-[--color-graphite] px-1">
+          <div className="grid grid-cols-[85px_minmax(0,1fr)_120px_50px_120px_65px_65px_28px] border-r border-[--color-graphite] px-1">
             <div className="px-2 py-2 text-xs text-[--color-text-muted]">Tarih</div>
             <div className="px-2 py-2 text-xs text-[--color-text-muted]">Ödeme Adı</div>
-            <div className="px-2 py-2 text-xs text-[--color-text-muted] text-center">TL</div>
-            <div className="px-2 py-2 text-xs text-[--color-text-muted] text-center">Kur</div>
-            <div className="px-2 py-2 text-xs text-[--color-text-muted] text-center">EUR</div>
+            <div className="px-2 py-2 text-xs text-[--color-text-muted] text-right">TL</div>
+            <div className="px-2 py-2 text-xs text-[--color-text-muted] text-right">Kur</div>
+            <div className="px-2 py-2 text-xs text-[--color-text-muted] text-right">EUR</div>
             <div className="px-2 py-2 text-xs text-[--color-text-muted] text-center">Durum</div>
             <div className="px-2 py-2 text-xs text-[--color-text-muted] text-center">Kişi</div>
             <div></div>
           </div>
-          <div className="grid grid-cols-[70px_180px_1fr_110px_60px_65px_65px_28px] px-1">
+          <div className="grid grid-cols-[85px_minmax(0,1fr)_90px_90px_110px_40px_60px_50px_28px] px-1">
             <div className="px-2 py-2 text-xs text-[--color-text-muted]">Tarih</div>
             <div className="px-2 py-2 text-xs text-[--color-text-muted]">Müşteri</div>
+            <div className="px-2 py-2 text-xs text-[--color-text-muted]">Fatura No</div>
             <div className="px-2 py-2 text-xs text-[--color-text-muted]">Sipariş No</div>
-            <div className="px-2 py-2 text-xs text-[--color-text-muted] text-center">Tutar</div>
+            <div className="px-2 py-2 text-xs text-[--color-text-muted] text-right">Tutar</div>
             <div className="px-2 py-2 text-xs text-[--color-text-muted] text-center">Vade</div>
             <div className="px-2 py-2 text-xs text-[--color-text-muted] text-center">Durum</div>
             <div className="px-2 py-2 text-xs text-[--color-text-muted] text-center">Kişi</div>
@@ -924,14 +925,14 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
                 return (
                   <div key={`row-${uw.key}-${i}`} className={`grid grid-cols-2 border-b border-[--color-graphite]/50 ${(o || s) ? 'hover:bg-[--color-steel]/30' : ''}`}>
                     {/* Ödeme side */}
-                    <div className={`border-r border-[--color-graphite]/30 ${o ? 'grid grid-cols-[70px_1fr_110px_45px_110px_65px_65px_28px] px-1' : ''}`}>
+                    <div className={`border-r border-[--color-graphite]/30 ${o ? 'grid grid-cols-[85px_minmax(0,1fr)_120px_50px_120px_65px_65px_28px] px-1' : ''}`}>
                       {o ? (
                         <>
-                          <div className="px-2 py-2 text-sm text-[--color-text-primary] truncate">{formatDate(o.tarih)}</div>
-                          <div className="px-2 py-2 text-sm text-[--color-text-primary] truncate">{o.odeme_adi}</div>
-                          <div className="px-2 py-2 text-right text-sm font-mono text-[--color-text-secondary] truncate">{o.tl_tutar ? maskedCurrency(o.tl_tutar, loggedIn, o.doviz) : '-'}</div>
-                          <div className="px-2 py-2 text-right text-xs font-mono text-[--color-text-muted]">{loggedIn ? formatKur(o.kur) : '****'}</div>
-                          <div className="px-2 py-2 text-right text-sm font-mono text-copper truncate">{maskedEur(o.tutar_eur, loggedIn)}</div>
+                          <div className="px-2 py-2 text-sm text-[--color-text-primary] whitespace-nowrap">{formatDate(o.tarih)}</div>
+                          <div className="px-2 py-2 text-sm text-[--color-text-primary] min-w-0 truncate cursor-default" title={o.odeme_adi}>{o.odeme_adi}</div>
+                          <div className="px-2 py-2 text-right text-sm font-mono text-[--color-text-secondary] whitespace-nowrap">{o.tl_tutar ? maskedCurrency(o.tl_tutar, loggedIn, o.doviz) : '-'}</div>
+                          <div className="px-2 py-2 text-right text-xs font-mono text-[--color-text-muted] whitespace-nowrap">{loggedIn ? formatKur(o.kur) : '****'}</div>
+                          <div className="px-2 py-2 text-right text-sm font-mono text-copper whitespace-nowrap">{maskedEur(o.tutar_eur, loggedIn)}</div>
                           <div className="px-2 py-2 text-center">
                             <button onClick={async () => {
                               if (!currentUser) return
@@ -953,13 +954,14 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
                       )}
                     </div>
                     {/* Sipariş side */}
-                    <div className={s ? 'grid grid-cols-[70px_180px_1fr_110px_60px_65px_65px_28px] px-1' : ''}>
+                    <div className={s ? 'grid grid-cols-[85px_minmax(0,1fr)_90px_90px_110px_40px_60px_50px_28px] px-1' : ''}>
                       {s ? (
                         <>
-                          <div className="px-2 py-2 text-sm text-[--color-text-primary] truncate">{formatDate(s.tarih)}</div>
-                          <div className="px-2 py-2 text-sm text-[--color-text-primary] truncate">{s.musteri}</div>
-                          <div className="px-2 py-2 text-sm text-[--color-text-secondary] truncate">{s.siparis_no || '-'}</div>
-                          <div className="px-2 py-2 text-center text-sm font-mono text-info truncate">
+                          <div className="px-2 py-2 text-sm text-[--color-text-primary] whitespace-nowrap">{formatDate(s.tarih)}</div>
+                          <div className="px-2 py-2 text-sm text-[--color-text-primary] min-w-0 truncate cursor-default" title={s.musteri}>{s.musteri}</div>
+                          <div className="px-2 py-2 text-sm text-[--color-text-secondary] min-w-0 truncate" title={s.fatura_no || ''}>{s.fatura_no || '-'}</div>
+                          <div className="px-2 py-2 text-sm text-[--color-text-secondary] min-w-0 truncate" title={s.siparis_no || ''}>{s.siparis_no || '-'}</div>
+                          <div className="px-2 py-2 text-right text-sm font-mono text-info whitespace-nowrap">
                             {loggedIn ? `${new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(s.tutar)} ${s.doviz === 'USD' ? '$' : '€'}` : '****'}
                           </div>
                           <div className="px-2 py-2 text-center text-sm text-[--color-text-muted]">{s.vade_gun ? `${s.vade_gun}g` : '-'}</div>
