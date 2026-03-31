@@ -499,12 +499,14 @@ function CariSection({ currentUser }: { currentUser: string }) {
 interface Odeme {
   id: string; tarih: string; odeme_adi: string; tl_tutar: number; tutar_eur: number; kur: number;
   tl_karsiligi: number; doviz: string; durum: string; donem: string; notlar: string; updated_by: string;
+  hesap_disi: number;
 }
 
 interface Siparis {
   id: string; tarih: string; fatura_no: string; musteri: string; siparis_no: string;
   tutar: number; kur: number; doviz: string; tutar_eur: number; vade_gun: number;
   durum: string; notlar: string; updated_by: string;
+  hesap_disi: number;
 }
 
 // ==================== MODAL COMPONENT ====================
@@ -590,14 +592,16 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
   }, [odemeForm.tl_tutar, odemeForm.kur, odemeForm.doviz])
 
   const odemeSummary = useMemo(() => {
-    const toplam = odemeler.reduce((s, o) => s + o.tutar_eur, 0)
-    const tamamlanan = odemeler.filter(o => o.durum === 'tamamlandi').reduce((s, o) => s + o.tutar_eur, 0)
+    const aktif = odemeler.filter(o => !o.hesap_disi)
+    const toplam = aktif.reduce((s, o) => s + o.tutar_eur, 0)
+    const tamamlanan = aktif.filter(o => o.durum === 'tamamlandi').reduce((s, o) => s + o.tutar_eur, 0)
     return { toplam, tamamlanan, kalan: toplam - tamamlanan }
   }, [odemeler])
 
   const siparisSummary = useMemo(() => {
-    const toplam = siparisler.reduce((s, o) => s + (o.tutar_eur || o.tutar), 0)
-    const tamamlanan = siparisler.filter(o => o.durum === 'tamamlandi').reduce((s, o) => s + (o.tutar_eur || o.tutar), 0)
+    const aktif = siparisler.filter(o => !o.hesap_disi)
+    const toplam = aktif.reduce((s, o) => s + (o.tutar_eur || o.tutar), 0)
+    const tamamlanan = aktif.filter(o => o.durum === 'tamamlandi').reduce((s, o) => s + (o.tutar_eur || o.tutar), 0)
     return { toplam, tamamlanan, kalan: toplam - tamamlanan }
   }, [siparisler])
 
@@ -871,7 +875,7 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
 
         {/* Column headers */}
         <div className="grid grid-cols-2 border-b border-[--color-graphite]">
-          <div className="grid grid-cols-[85px_minmax(0,1fr)_120px_50px_120px_65px_65px_28px] border-r border-[--color-graphite] px-1">
+          <div className="grid grid-cols-[85px_minmax(0,1fr)_120px_50px_120px_60px_50px_24px_28px] border-r border-[--color-graphite] px-1">
             <div className="px-2 py-2 text-xs text-[--color-text-muted]">Tarih</div>
             <div className="px-2 py-2 text-xs text-[--color-text-muted]">Ödeme Adı</div>
             <div className="px-2 py-2 text-xs text-[--color-text-muted] text-right">TL</div>
@@ -879,9 +883,10 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
             <div className="px-2 py-2 text-xs text-[--color-text-muted] text-right">EUR</div>
             <div className="px-2 py-2 text-xs text-[--color-text-muted] text-center">Durum</div>
             <div className="px-2 py-2 text-xs text-[--color-text-muted] text-center">Kişi</div>
+            <div className="px-1 py-2 text-xs text-[--color-text-muted] text-center" title="Hesap Dışı">HD</div>
             <div></div>
           </div>
-          <div className="grid grid-cols-[85px_minmax(0,1fr)_90px_90px_110px_40px_60px_50px_28px] px-1">
+          <div className="grid grid-cols-[85px_minmax(0,1fr)_90px_90px_110px_40px_55px_45px_24px_28px] px-1">
             <div className="px-2 py-2 text-xs text-[--color-text-muted]">Tarih</div>
             <div className="px-2 py-2 text-xs text-[--color-text-muted]">Müşteri</div>
             <div className="px-2 py-2 text-xs text-[--color-text-muted]">Fatura No</div>
@@ -890,6 +895,7 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
             <div className="px-2 py-2 text-xs text-[--color-text-muted] text-center">Vade</div>
             <div className="px-2 py-2 text-xs text-[--color-text-muted] text-center">Durum</div>
             <div className="px-2 py-2 text-xs text-[--color-text-muted] text-center">Kişi</div>
+            <div className="px-1 py-2 text-xs text-[--color-text-muted] text-center" title="Hesap Dışı">HD</div>
             <div></div>
           </div>
         </div>
@@ -906,14 +912,14 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-copper bg-copper/10 px-2 py-0.5 rounded">H{uw.week}</span>
                     <span className="text-[10px] text-[--color-text-muted]">{getWeekDateRange(uw.year, uw.week)}</span>
-                    {uw.odemeItems.length > 0 && <span className="text-[10px] text-copper/60">{uw.odemeItems.length} ödeme · {maskedEur(uw.odemeItems.reduce((s, o) => s + o.tutar_eur, 0), loggedIn)}</span>}
+                    {uw.odemeItems.length > 0 && <span className="text-[10px] text-copper/60">{uw.odemeItems.length} ödeme · {maskedEur(uw.odemeItems.filter(o => !o.hesap_disi).reduce((s, o) => s + o.tutar_eur, 0), loggedIn)}</span>}
                   </div>
                 </div>
                 <div className="px-3 py-1.5 bg-info/5">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-info bg-info/10 px-2 py-0.5 rounded">H{uw.week}</span>
                     <span className="text-[10px] text-[--color-text-muted]">{getWeekDateRange(uw.year, uw.week)}</span>
-                    {uw.siparisItems.length > 0 && <span className="text-[10px] text-info/60">{uw.siparisItems.length} sipariş · {maskedEur(uw.siparisItems.reduce((s, o) => s + (o.tutar_eur || o.tutar), 0), loggedIn)}</span>}
+                    {uw.siparisItems.length > 0 && <span className="text-[10px] text-info/60">{uw.siparisItems.length} sipariş · {maskedEur(uw.siparisItems.filter(o => !o.hesap_disi).reduce((s, o) => s + (o.tutar_eur || o.tutar), 0), loggedIn)}</span>}
                   </div>
                 </div>
               </div>
@@ -925,11 +931,11 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
                 return (
                   <div key={`row-${uw.key}-${i}`} className={`grid grid-cols-2 border-b border-[--color-graphite]/50 ${(o || s) ? 'hover:bg-[--color-steel]/30' : ''}`}>
                     {/* Ödeme side */}
-                    <div className={`border-r border-[--color-graphite]/30 ${o ? 'grid grid-cols-[85px_minmax(0,1fr)_120px_50px_120px_65px_65px_28px] px-1' : ''}`}>
+                    <div className={`border-r border-[--color-graphite]/30 ${o ? `grid grid-cols-[85px_minmax(0,1fr)_120px_50px_120px_60px_50px_24px_28px] px-1 ${o.hesap_disi ? 'opacity-40' : ''}` : ''}`}>
                       {o ? (
                         <>
                           <div className="px-2 py-2 text-sm text-[--color-text-primary] whitespace-nowrap">{formatDate(o.tarih)}</div>
-                          <div className="px-2 py-2 text-sm text-[--color-text-primary] min-w-0 truncate cursor-default" title={o.odeme_adi}>{o.odeme_adi}</div>
+                          <div className={`px-2 py-2 text-sm min-w-0 truncate cursor-default ${o.hesap_disi ? 'line-through text-[--color-text-muted]' : 'text-[--color-text-primary]'}`} title={o.odeme_adi}>{o.odeme_adi}</div>
                           <div className="px-2 py-2 text-right text-sm font-mono text-[--color-text-secondary] whitespace-nowrap">{o.tl_tutar ? maskedCurrency(o.tl_tutar, loggedIn, o.doviz) : '-'}</div>
                           <div className="px-2 py-2 text-right text-xs font-mono text-[--color-text-muted] whitespace-nowrap">{loggedIn ? formatKur(o.kur) : '****'}</div>
                           <div className="px-2 py-2 text-right text-sm font-mono text-copper whitespace-nowrap">{maskedEur(o.tutar_eur, loggedIn)}</div>
@@ -943,7 +949,16 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
                               {DURUM_LABELS[o.durum] || o.durum}
                             </button>
                           </div>
-                          <div className="px-1 py-2 text-right text-[10px] text-[--color-text-muted] truncate">{o.updated_by || '-'}</div>
+                          <div className="px-1 py-2 text-center text-[10px] text-[--color-text-muted] truncate">{o.updated_by || '-'}</div>
+                          <div className="px-1 py-2 text-center">
+                            <button onClick={async () => {
+                              if (!currentUser) return
+                              await api.kenanUpdateOdeme(o.id, { ...o, hesap_disi: o.hesap_disi ? 0 : 1, user: currentUser })
+                              loadAll()
+                            }} className={`text-[10px] px-1 py-0.5 rounded cursor-pointer hover:opacity-80 ${o.hesap_disi ? 'bg-red-400/20 text-red-400' : 'bg-[--color-steel]/30 text-[--color-text-muted]'}`} title={o.hesap_disi ? 'Hesaba dahil et' : 'Hesap dışı yap'}>
+                              {o.hesap_disi ? '✗' : '·'}
+                            </button>
+                          </div>
                           <div className="py-2 flex gap-0.5 justify-end">
                             <button onClick={() => { if (!currentUser) return; startEditOdeme(o) }} className="text-[--color-text-muted] hover:text-info"><Edit3 size={11} /></button>
                             <button onClick={async () => { if (!currentUser) return; if (confirm('Sil?')) { await api.kenanDeleteOdeme(o.id, currentUser); loadAll() } }} className="text-[--color-text-muted] hover:text-red-400"><Trash2 size={11} /></button>
@@ -954,11 +969,11 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
                       )}
                     </div>
                     {/* Sipariş side */}
-                    <div className={s ? 'grid grid-cols-[85px_minmax(0,1fr)_90px_90px_110px_40px_60px_50px_28px] px-1' : ''}>
+                    <div className={s ? `grid grid-cols-[85px_minmax(0,1fr)_90px_90px_110px_40px_55px_45px_24px_28px] px-1 ${s.hesap_disi ? 'opacity-40' : ''}` : ''}>
                       {s ? (
                         <>
                           <div className="px-2 py-2 text-sm text-[--color-text-primary] whitespace-nowrap">{formatDate(s.tarih)}</div>
-                          <div className="px-2 py-2 text-sm text-[--color-text-primary] min-w-0 truncate cursor-default" title={s.musteri}>{s.musteri}</div>
+                          <div className={`px-2 py-2 text-sm min-w-0 truncate cursor-default ${s.hesap_disi ? 'line-through text-[--color-text-muted]' : 'text-[--color-text-primary]'}`} title={s.musteri}>{s.musteri}</div>
                           <div className="px-2 py-2 text-sm text-[--color-text-secondary] min-w-0 truncate" title={s.fatura_no || ''}>{s.fatura_no || '-'}</div>
                           <div className="px-2 py-2 text-sm text-[--color-text-secondary] min-w-0 truncate" title={s.siparis_no || ''}>{s.siparis_no || '-'}</div>
                           <div className="px-2 py-2 text-right text-sm font-mono text-info whitespace-nowrap">
@@ -976,6 +991,15 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
                             </button>
                           </div>
                           <div className="px-1 py-2 text-center text-[10px] text-[--color-text-muted] truncate">{s.updated_by || '-'}</div>
+                          <div className="px-1 py-2 text-center">
+                            <button onClick={async () => {
+                              if (!currentUser) return
+                              await api.kenanUpdateSiparis(s.id, { ...s, hesap_disi: s.hesap_disi ? 0 : 1, user: currentUser })
+                              loadAll()
+                            }} className={`text-[10px] px-1 py-0.5 rounded cursor-pointer hover:opacity-80 ${s.hesap_disi ? 'bg-red-400/20 text-red-400' : 'bg-[--color-steel]/30 text-[--color-text-muted]'}`} title={s.hesap_disi ? 'Hesaba dahil et' : 'Hesap dışı yap'}>
+                              {s.hesap_disi ? '✗' : '·'}
+                            </button>
+                          </div>
                           <div className="py-2 flex gap-0.5 justify-end">
                             <button onClick={() => { if (!currentUser) return; startEditSiparis(s) }} className="text-[--color-text-muted] hover:text-info"><Edit3 size={11} /></button>
                             <button onClick={async () => { if (!currentUser) return; if (confirm('Sil?')) { await api.kenanDeleteSiparis(s.id, currentUser); loadAll() } }} className="text-[--color-text-muted] hover:text-red-400"><Trash2 size={11} /></button>

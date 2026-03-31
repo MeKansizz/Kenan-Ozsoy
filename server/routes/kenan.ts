@@ -195,7 +195,7 @@ router.get('/cari', (req, res) => {
       SELECT id, tarih, 'ÖDEME' as islem_tipi, odeme_adi as aciklama, '' as referans,
         0 as giren_eur, tutar_eur as cikan_eur, kur, tl_karsiligi, durum,
         '' as temlikname_no, '' as vade_tarihi, notlar, updated_by, 'odeme' as kaynak,
-        created_at
+        COALESCE(hesap_disi, 0) as hesap_disi, created_at
       FROM kenan_odemeler
       WHERE 1=1 ${whereClause}
       UNION ALL
@@ -204,7 +204,7 @@ router.get('/cari', (req, res) => {
         COALESCE(fatura_no, '') as referans,
         COALESCE(tutar_eur, tutar) as giren_eur, 0 as cikan_eur, kur, 0 as tl_karsiligi, durum,
         '' as temlikname_no, '' as vade_tarihi, notlar, updated_by, 'siparis' as kaynak,
-        created_at
+        COALESCE(hesap_disi, 0) as hesap_disi, created_at
       FROM kenan_siparisler
       WHERE 1=1 ${whereClause}
     ) combined
@@ -234,9 +234,9 @@ router.get('/odemeler/summary', (_req, res) => {
   const db = getDb()
   const row = db.prepare(`
     SELECT
-      COALESCE(SUM(tutar_eur), 0) as toplam,
-      COALESCE(SUM(CASE WHEN durum='tamamlandi' THEN tutar_eur ELSE 0 END), 0) as tamamlanan,
-      COALESCE(SUM(CASE WHEN durum='beklemede' THEN tutar_eur ELSE 0 END), 0) as bekleyen
+      COALESCE(SUM(CASE WHEN COALESCE(hesap_disi,0)=0 THEN tutar_eur ELSE 0 END), 0) as toplam,
+      COALESCE(SUM(CASE WHEN durum='tamamlandi' AND COALESCE(hesap_disi,0)=0 THEN tutar_eur ELSE 0 END), 0) as tamamlanan,
+      COALESCE(SUM(CASE WHEN durum='beklemede' AND COALESCE(hesap_disi,0)=0 THEN tutar_eur ELSE 0 END), 0) as bekleyen
     FROM kenan_odemeler
   `).get()
   res.json(row)
@@ -245,7 +245,7 @@ router.get('/odemeler/summary', (_req, res) => {
 router.post('/odemeler', (req, res) => {
   const db = getDb()
   const id = randomUUID()
-  const { tarih, odeme_adi, tl_tutar, tutar_eur, kur, doviz, durum, donem, notlar, user } = req.body
+  const { tarih, odeme_adi, tl_tutar, tutar_eur, kur, doviz, durum, donem, notlar, hesap_disi, user } = req.body
 
   // Currency-aware EUR calculation
   let finalEur = tutar_eur || 0
@@ -260,9 +260,9 @@ router.post('/odemeler', (req, res) => {
   const now = new Date().toISOString()
 
   db.prepare(`
-    INSERT INTO kenan_odemeler (id, tarih, odeme_adi, tl_tutar, tutar_eur, kur, doviz, tl_karsiligi, durum, donem, notlar, updated_by, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(id, tarih, odeme_adi, finalTl, finalEur, kur || null, currency, tl_karsiligi || null, durum || 'beklemede', donem || null, notlar || null, user || null, now)
+    INSERT INTO kenan_odemeler (id, tarih, odeme_adi, tl_tutar, tutar_eur, kur, doviz, tl_karsiligi, durum, donem, notlar, hesap_disi, updated_by, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(id, tarih, odeme_adi, finalTl, finalEur, kur || null, currency, tl_karsiligi || null, durum || 'beklemede', donem || null, notlar || null, hesap_disi ? 1 : 0, user || null, now)
 
   logAudit('kenan_odemeler', id, 'create', { tarih, odeme_adi, tl_tutar: finalTl, tutar_eur: finalEur, kur, durum }, user || 'system')
   res.json({ id })
@@ -270,7 +270,7 @@ router.post('/odemeler', (req, res) => {
 
 router.put('/odemeler/:id', (req, res) => {
   const db = getDb()
-  const { tarih, odeme_adi, tl_tutar, tutar_eur, kur, doviz, durum, donem, notlar, user } = req.body
+  const { tarih, odeme_adi, tl_tutar, tutar_eur, kur, doviz, durum, donem, notlar, hesap_disi, user } = req.body
 
   // Get old values for audit
   const old = db.prepare('SELECT * FROM kenan_odemeler WHERE id = ?').get(req.params.id) as any
@@ -288,9 +288,9 @@ router.put('/odemeler/:id', (req, res) => {
   const now = new Date().toISOString()
 
   db.prepare(`
-    UPDATE kenan_odemeler SET tarih=?, odeme_adi=?, tl_tutar=?, tutar_eur=?, kur=?, doviz=?, tl_karsiligi=?, durum=?, donem=?, notlar=?, updated_by=?, updated_at=?
+    UPDATE kenan_odemeler SET tarih=?, odeme_adi=?, tl_tutar=?, tutar_eur=?, kur=?, doviz=?, tl_karsiligi=?, durum=?, donem=?, notlar=?, hesap_disi=?, updated_by=?, updated_at=?
     WHERE id=?
-  `).run(tarih, odeme_adi, finalTl, finalEur, kur || null, currency, tl_karsiligi || null, durum || 'beklemede', donem || null, notlar || null, user || null, now, req.params.id)
+  `).run(tarih, odeme_adi, finalTl, finalEur, kur || null, currency, tl_karsiligi || null, durum || 'beklemede', donem || null, notlar || null, hesap_disi !== undefined ? (hesap_disi ? 1 : 0) : (old.hesap_disi || 0), user || null, now, req.params.id)
 
   // Build changes diff
   const changes: Record<string, { old: any; new: any }> = {}
@@ -333,9 +333,9 @@ router.get('/siparisler/summary', (_req, res) => {
   const db = getDb()
   const row = db.prepare(`
     SELECT
-      COALESCE(SUM(tutar_eur), 0) as toplam,
-      COALESCE(SUM(CASE WHEN durum='tamamlandi' THEN tutar_eur ELSE 0 END), 0) as tamamlanan,
-      COALESCE(SUM(CASE WHEN durum='beklemede' THEN tutar_eur ELSE 0 END), 0) as bekleyen
+      COALESCE(SUM(CASE WHEN COALESCE(hesap_disi,0)=0 THEN tutar_eur ELSE 0 END), 0) as toplam,
+      COALESCE(SUM(CASE WHEN durum='tamamlandi' AND COALESCE(hesap_disi,0)=0 THEN tutar_eur ELSE 0 END), 0) as tamamlanan,
+      COALESCE(SUM(CASE WHEN durum='beklemede' AND COALESCE(hesap_disi,0)=0 THEN tutar_eur ELSE 0 END), 0) as bekleyen
     FROM kenan_siparisler
   `).get()
   res.json(row)
@@ -344,15 +344,15 @@ router.get('/siparisler/summary', (_req, res) => {
 router.post('/siparisler', (req, res) => {
   const db = getDb()
   const id = randomUUID()
-  const { tarih, fatura_no, musteri, siparis_no, tutar, kur, doviz, vade_gun, durum, notlar, user } = req.body
+  const { tarih, fatura_no, musteri, siparis_no, tutar, kur, doviz, vade_gun, durum, notlar, hesap_disi, user } = req.body
 
   const tutar_eur = tutar // EUR or USD amount directly
   const now = new Date().toISOString()
 
   db.prepare(`
-    INSERT INTO kenan_siparisler (id, tarih, fatura_no, musteri, siparis_no, tutar, kur, doviz, tutar_eur, vade_gun, durum, notlar, updated_by, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(id, tarih, fatura_no || null, musteri, siparis_no || null, tutar, kur || null, doviz || 'EUR', tutar_eur, vade_gun || null, durum || 'beklemede', notlar || null, user || null, now)
+    INSERT INTO kenan_siparisler (id, tarih, fatura_no, musteri, siparis_no, tutar, kur, doviz, tutar_eur, vade_gun, durum, notlar, hesap_disi, updated_by, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(id, tarih, fatura_no || null, musteri, siparis_no || null, tutar, kur || null, doviz || 'EUR', tutar_eur, vade_gun || null, durum || 'beklemede', notlar || null, hesap_disi ? 1 : 0, user || null, now)
 
   logAudit('kenan_siparisler', id, 'create', { tarih, musteri, tutar, doviz, durum }, user || 'system')
   res.json({ id })
@@ -360,7 +360,7 @@ router.post('/siparisler', (req, res) => {
 
 router.put('/siparisler/:id', (req, res) => {
   const db = getDb()
-  const { tarih, fatura_no, musteri, siparis_no, tutar, kur, doviz, tutar_eur, vade_gun, durum, notlar, user } = req.body
+  const { tarih, fatura_no, musteri, siparis_no, tutar, kur, doviz, tutar_eur, vade_gun, durum, notlar, hesap_disi, user } = req.body
 
   const old = db.prepare('SELECT * FROM kenan_siparisler WHERE id = ?').get(req.params.id) as any
   if (!old) return res.status(404).json({ message: 'Kayıt bulunamadı' })
@@ -368,9 +368,9 @@ router.put('/siparisler/:id', (req, res) => {
   const now = new Date().toISOString()
 
   db.prepare(`
-    UPDATE kenan_siparisler SET tarih=?, fatura_no=?, musteri=?, siparis_no=?, tutar=?, kur=?, doviz=?, tutar_eur=?, vade_gun=?, durum=?, notlar=?, updated_by=?, updated_at=?
+    UPDATE kenan_siparisler SET tarih=?, fatura_no=?, musteri=?, siparis_no=?, tutar=?, kur=?, doviz=?, tutar_eur=?, vade_gun=?, durum=?, notlar=?, hesap_disi=?, updated_by=?, updated_at=?
     WHERE id=?
-  `).run(tarih, fatura_no || null, musteri, siparis_no || null, tutar, kur || null, doviz || 'EUR', tutar_eur || tutar, vade_gun || null, durum || 'beklemede', notlar || null, user || null, now, req.params.id)
+  `).run(tarih, fatura_no || null, musteri, siparis_no || null, tutar, kur || null, doviz || 'EUR', tutar_eur || tutar, vade_gun || null, durum || 'beklemede', notlar || null, hesap_disi !== undefined ? (hesap_disi ? 1 : 0) : (old.hesap_disi || 0), user || null, now, req.params.id)
 
   const changes: Record<string, { old: any; new: any }> = {}
   const fields = ['tarih', 'fatura_no', 'musteri', 'siparis_no', 'tutar', 'kur', 'doviz', 'vade_gun', 'durum', 'notlar']
