@@ -50,6 +50,9 @@ export const api = {
   kenanCreateOdeme: (data: any) => request<any>('/kenan/odemeler', { method: 'POST', body: JSON.stringify(data) }),
   kenanUpdateOdeme: (id: string, data: any) => request<any>(`/kenan/odemeler/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   kenanDeleteOdeme: (id: string, user?: string) => request<any>(`/kenan/odemeler/${id}?user=${user || ''}`, { method: 'DELETE' }),
+  kenanToggleOdemePlanlamada: (id: string, planlamada: boolean) => request<any>(`/kenan/odemeler/${id}/planlamada`, { method: 'PUT', body: JSON.stringify({ planlamada }) }),
+  kenanUpdateOdemePlanSira: (id: string, sira: number) => request<any>(`/kenan/odemeler/${id}/plan-sira`, { method: 'PUT', body: JSON.stringify({ sira }) }),
+  kenanInitPlanSira: () => request<any>('/kenan/planlama/init-sira', { method: 'POST' }),
 
   // Siparisler
   kenanGetSiparisler: (params?: Record<string, string>) => {
@@ -59,4 +62,16 @@ export const api = {
   kenanCreateSiparis: (data: any) => request<any>('/kenan/siparisler', { method: 'POST', body: JSON.stringify(data) }),
   kenanUpdateSiparis: (id: string, data: any) => request<any>(`/kenan/siparisler/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   kenanDeleteSiparis: (id: string, user?: string) => request<any>(`/kenan/siparisler/${id}?user=${user || ''}`, { method: 'DELETE' }),
+
+  // Planlama
+  kenanGetPlanlama: () => request<any[]>('/kenan/planlama'),
+  kenanAddPlanlama: (siparis_id: string, user?: string, sira?: number) => request<any>('/kenan/planlama', { method: 'POST', body: JSON.stringify({ siparis_id, user, sira }) }),
+  kenanRemovePlanlama: (id: string) => request<any>(`/kenan/planlama/${id}`, { method: 'DELETE' }),
+  kenanUpdatePlanlamaSira: (id: string, sira: number) => request<any>(`/kenan/planlama/${id}/sira`, { method: 'PUT', body: JSON.stringify({ sira }) }),
+
+  // Plan Markers
+  kenanGetPlanMarkers: () => request<any[]>('/kenan/planlama/markers'),
+  kenanCreatePlanMarker: (sira?: number) => request<any>('/kenan/planlama/markers', { method: 'POST', body: JSON.stringify({ sira }) }),
+  kenanUpdatePlanMarkerSira: (id: string, sira: number) => request<any>(`/kenan/planlama/markers/${id}/sira`, { method: 'PUT', body: JSON.stringify({ sira }) }),
+  kenanDeletePlanMarker: (id: string) => request<any>(`/kenan/planlama/markers/${id}`, { method: 'DELETE' }),
 }

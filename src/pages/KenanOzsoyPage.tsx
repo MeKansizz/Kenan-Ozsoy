@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, useCallback, Fragment } from 'react'
 import { api } from '@/lib/api'
-import { Plus, Trash2, Edit3, X, Filter, ArrowDownCircle, ArrowUpCircle, RefreshCw, Users, Clock, UserCheck, Search } from 'lucide-react'
+import { Plus, Trash2, Edit3, X, Filter, ArrowDownCircle, ArrowUpCircle, RefreshCw, Users, Clock, UserCheck, Search, CalendarCheck } from 'lucide-react'
+import { OdemePlanlamaSection } from './OdemePlanlamaPage'
 
 const DURUM_OPTIONS = ['beklemede', 'tamamlandi']
 const DURUM_LABELS: Record<string, string> = { beklemede: 'Beklemede', tamamlandi: 'Tamamlandı' }
@@ -499,7 +500,7 @@ function CariSection({ currentUser }: { currentUser: string }) {
 interface Odeme {
   id: string; tarih: string; odeme_adi: string; tl_tutar: number; tutar_eur: number; kur: number;
   tl_karsiligi: number; doviz: string; durum: string; donem: string; notlar: string; updated_by: string;
-  hesap_disi: number;
+  hesap_disi: number; planlamada: number;
 }
 
 interface Siparis {
@@ -532,6 +533,7 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
   const loggedIn = !!currentUser
   const [odemeler, setOdemeler] = useState<Odeme[]>([])
   const [siparisler, setSiparisler] = useState<Siparis[]>([])
+  const [plannedSiparisIds, setPlannedSiparisIds] = useState<Set<string>>(new Set())
   const [showOdemeForm, setShowOdemeForm] = useState(false)
   const [showSiparisForm, setShowSiparisForm] = useState(false)
   const [editOdemeId, setEditOdemeId] = useState<string | null>(null)
@@ -541,16 +543,20 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
   const { fetchKur } = useKur()
 
   const [odemeForm, setOdemeForm] = useState({
-    tarih: new Date().toISOString().slice(0, 10), odeme_adi: '', tl_tutar: '', tutar_eur: '', kur: '', doviz: 'TL', durum: 'beklemede', donem: '', notlar: ''
+    tarih: new Date().toISOString().slice(0, 10), odeme_adi: '', tl_tutar: '', tutar_eur: '', kur: '', doviz: 'TL', durum: 'beklemede', donem: '', notlar: '', kategori: ''
   })
   const [siparisForm, setSiparisForm] = useState({
-    tarih: new Date().toISOString().slice(0, 10), fatura_no: '', musteri: '', siparis_no: '', tutar: '', kur: '', doviz: 'EUR', vade_gun: '', durum: 'beklemede', notlar: ''
+    tarih: new Date().toISOString().slice(0, 10), fatura_no: '', musteri: '', siparis_no: '', tutar: '', kur: '', doviz: 'EUR', vade_gun: '', durum: 'beklemede', notlar: '',
+    maliyet_iplik: '', maliyet_boya: '', maliyet_navlun: '',
+    iplik_cinsi: '', iplik_miktar: '', iplik_birim_fiyat: '',
+    boyahane: ''
   })
 
   const loadAll = async () => {
-    const [o, s] = await Promise.all([api.kenanGetOdemeler(), api.kenanGetSiparisler()])
+    const [o, s, p] = await Promise.all([api.kenanGetOdemeler(), api.kenanGetSiparisler(), api.kenanGetPlanlama()])
     setOdemeler(o)
     setSiparisler(s)
+    setPlannedSiparisIds(new Set(p.map((x: any) => x.siparis_id)))
   }
 
   useEffect(() => { loadAll() }, [])
@@ -660,7 +666,7 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
 
   // Ödeme handlers
   const resetOdemeForm = () => {
-    setOdemeForm({ tarih: new Date().toISOString().slice(0, 10), odeme_adi: '', tl_tutar: '', tutar_eur: '', kur: '', doviz: 'TL', durum: 'beklemede', donem: '', notlar: '' })
+    setOdemeForm({ tarih: new Date().toISOString().slice(0, 10), odeme_adi: '', tl_tutar: '', tutar_eur: '', kur: '', doviz: 'TL', durum: 'beklemede', donem: '', notlar: '', kategori: '' })
     setEditOdemeId(null)
     setShowOdemeForm(false)
   }
@@ -687,7 +693,7 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
       tutar_eur: o.tutar_eur ? String(o.tutar_eur) : '',
       kur: o.kur ? String(o.kur) : '',
       doviz,
-      durum: o.durum, donem: o.donem || '', notlar: o.notlar || ''
+      durum: o.durum, donem: o.donem || '', notlar: o.notlar || '', kategori: (o as any).kategori || ''
     })
     setEditOdemeId(o.id)
     setShowOdemeForm(true)
@@ -697,7 +703,7 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
 
   // Sipariş handlers
   const resetSiparisForm = () => {
-    setSiparisForm({ tarih: new Date().toISOString().slice(0, 10), fatura_no: '', musteri: '', siparis_no: '', tutar: '', kur: '', doviz: 'EUR', vade_gun: '', durum: 'beklemede', notlar: '' })
+    setSiparisForm({ tarih: new Date().toISOString().slice(0, 10), fatura_no: '', musteri: '', siparis_no: '', tutar: '', kur: '', doviz: 'EUR', vade_gun: '', durum: 'beklemede', notlar: '', maliyet_iplik: '', maliyet_boya: '', maliyet_navlun: '', iplik_cinsi: '', iplik_miktar: '', iplik_birim_fiyat: '', boyahane: '' })
     setEditSiparisId(null)
     setShowSiparisForm(false)
   }
@@ -708,6 +714,13 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
       tutar: parseFloat(siparisForm.tutar) || 0,
       kur: parseFloat(siparisForm.kur) || null,
       vade_gun: parseInt(siparisForm.vade_gun) || null,
+      maliyet_iplik: parseFloat(siparisForm.maliyet_iplik) || 0,
+      maliyet_boya: parseFloat(siparisForm.maliyet_boya) || 0,
+      maliyet_navlun: parseFloat(siparisForm.maliyet_navlun) || 0,
+      iplik_cinsi: siparisForm.iplik_cinsi || '',
+      iplik_miktar: parseFloat(siparisForm.iplik_miktar) || 0,
+      iplik_birim_fiyat: parseFloat(siparisForm.iplik_birim_fiyat) || 0,
+      boyahane: siparisForm.boyahane || '',
       user: currentUser,
     }
     if (editSiparisId) await api.kenanUpdateSiparis(editSiparisId, data)
@@ -720,7 +733,14 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
     setSiparisForm({
       tarih: s.tarih, fatura_no: s.fatura_no || '', musteri: s.musteri, siparis_no: s.siparis_no || '',
       tutar: String(s.tutar), kur: s.kur ? String(s.kur) : '', doviz: s.doviz || 'EUR',
-      vade_gun: s.vade_gun ? String(s.vade_gun) : '', durum: s.durum, notlar: s.notlar || ''
+      vade_gun: s.vade_gun ? String(s.vade_gun) : '', durum: s.durum, notlar: s.notlar || '',
+      maliyet_iplik: (s as any).maliyet_iplik ? String((s as any).maliyet_iplik) : (s.tutar > 0 ? String(Math.round(s.tutar * 0.4 * 100) / 100) : ''),
+      maliyet_boya: (s as any).maliyet_boya ? String((s as any).maliyet_boya) : (s.tutar > 0 ? String(Math.round(s.tutar * 0.2 * 100) / 100) : ''),
+      maliyet_navlun: (s as any).maliyet_navlun ? String((s as any).maliyet_navlun) : '',
+      iplik_cinsi: (s as any).iplik_cinsi || '',
+      iplik_miktar: (s as any).iplik_miktar ? String((s as any).iplik_miktar) : '',
+      iplik_birim_fiyat: (s as any).iplik_birim_fiyat ? String((s as any).iplik_birim_fiyat) : '',
+      boyahane: (s as any).boyahane || '',
     })
     setEditSiparisId(s.id)
     setShowSiparisForm(true)
@@ -792,7 +812,19 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
               </div>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-4 gap-3">
+            <div>
+              <label className="text-xs text-[--color-text-muted] mb-1 block">Kategori</label>
+              <select value={odemeForm.kategori} onChange={e => setOdemeForm(p => ({ ...p, kategori: e.target.value }))} className={inputCls}>
+                <option value="">Seçiniz</option>
+                <option value="Çek">Çek</option>
+                <option value="Banka">Banka</option>
+                <option value="Muhtelif">Muhtelif</option>
+                <option value="Maaş / SGK">Maaş / SGK</option>
+                <option value="İplik Cari">İplik Cari</option>
+                <option value="Boyahane">Boyahane</option>
+              </select>
+            </div>
             <div>
               <label className="text-xs text-[--color-text-muted] mb-1 block">Dönem</label>
               <input value={odemeForm.donem} onChange={e => setOdemeForm(p => ({ ...p, donem: e.target.value }))} placeholder="Mart 2026" className={inputCls} />
@@ -848,7 +880,11 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="text-xs text-[--color-text-muted] mb-1 block">Tutar ({siparisForm.doviz})</label>
-              <input type="number" step="0.01" value={siparisForm.tutar} onChange={e => setSiparisForm(p => ({ ...p, tutar: e.target.value }))} className={inputCls} />
+              <input type="number" step="0.01" value={siparisForm.tutar} onChange={e => {
+                const val = e.target.value
+                const t = parseFloat(val) || 0
+                setSiparisForm(p => ({ ...p, tutar: val, maliyet_iplik: t > 0 ? String(Math.round(t * 0.4 * 100) / 100) : '', maliyet_boya: t > 0 ? String(Math.round(t * 0.2 * 100) / 100) : '' }))
+              }} className={inputCls} />
             </div>
             <div>
               <label className="text-xs text-[--color-text-muted] mb-1 block">Kur <span className="text-copper">TCMB</span></label>
@@ -870,6 +906,76 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
               <label className="text-xs text-[--color-text-muted] mb-1 block">Notlar</label>
               <input value={siparisForm.notlar} onChange={e => setSiparisForm(p => ({ ...p, notlar: e.target.value }))} className={inputCls} />
             </div>
+          </div>
+          {/* Maliyet Bölümü */}
+          <div className="pt-3 border-t border-[--color-graphite]">
+            <div className="text-xs text-info font-semibold mb-2">MALİYET</div>
+            <div className="grid grid-cols-4 gap-3">
+              <div>
+                <label className="text-xs text-[--color-text-muted] mb-1 block">İplik <span className="text-info text-[10px]">(Tutar %40)</span></label>
+                <input type="number" step="0.01" value={siparisForm.maliyet_iplik} onChange={e => setSiparisForm(p => ({ ...p, maliyet_iplik: e.target.value }))} placeholder="0" className={inputCls} />
+              </div>
+              <div>
+                <label className="text-xs text-[--color-text-muted] mb-1 block">Boya <span className="text-info text-[10px]">(Tutar %20)</span></label>
+                <input type="number" step="0.01" value={siparisForm.maliyet_boya} onChange={e => setSiparisForm(p => ({ ...p, maliyet_boya: e.target.value }))} placeholder="0" className={inputCls} />
+              </div>
+              <div>
+                <label className="text-xs text-[--color-text-muted] mb-1 block">Navlun <span className="text-info text-[10px]">(Manuel)</span></label>
+                <input type="number" step="0.01" value={siparisForm.maliyet_navlun} onChange={e => setSiparisForm(p => ({ ...p, maliyet_navlun: e.target.value }))} placeholder="0" className={inputCls} />
+              </div>
+              <div>
+                <label className="text-xs text-[--color-text-muted] mb-1 block">Toplam Maliyet</label>
+                <div className="px-3 py-2 rounded-lg bg-[--color-steel]/50 border border-[--color-graphite] text-sm font-mono text-info">
+                  {maskedEur((parseFloat(siparisForm.maliyet_iplik) || 0) + (parseFloat(siparisForm.maliyet_boya) || 0) + (parseFloat(siparisForm.maliyet_navlun) || 0), loggedIn)}
+                </div>
+              </div>
+            </div>
+          </div>
+          {/* İplik Cinsi */}
+          <div className="grid grid-cols-[minmax(0,1fr)_90px_16px_90px_16px_100px] gap-2 items-end">
+            <div>
+              <label className="text-xs text-[--color-text-muted] mb-1 block">İplik Cinsi</label>
+              <select value={siparisForm.iplik_cinsi} onChange={e => setSiparisForm(p => ({ ...p, iplik_cinsi: e.target.value }))} className={inputCls}>
+                <option value="">Seçiniz</option>
+                <option value="Pamuk">Pamuk</option>
+                <option value="Polyester">Polyester</option>
+                <option value="Viskon">Viskon</option>
+                <option value="Akrilik">Akrilik</option>
+                <option value="Modal">Modal</option>
+                <option value="Tencel">Tencel</option>
+                <option value="Yün">Yün</option>
+                <option value="Elastan">Elastan</option>
+                <option value="Naylon">Naylon</option>
+                <option value="Karışım">Karışım</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-[--color-text-muted] mb-1 block">Miktar</label>
+              <input type="number" step="0.01" value={siparisForm.iplik_miktar} onChange={e => setSiparisForm(p => ({ ...p, iplik_miktar: e.target.value }))} placeholder="0" className={inputCls} />
+            </div>
+            <div className="flex items-center justify-center pb-2 text-[--color-text-muted] font-bold">×</div>
+            <div>
+              <label className="text-xs text-[--color-text-muted] mb-1 block">Birim Fiyat</label>
+              <input type="number" step="0.01" value={siparisForm.iplik_birim_fiyat} onChange={e => setSiparisForm(p => ({ ...p, iplik_birim_fiyat: e.target.value }))} placeholder="0" className={inputCls} />
+            </div>
+            <div className="flex items-center justify-center pb-2 text-[--color-text-muted] font-bold">=</div>
+            <div>
+              <label className="text-xs text-[--color-text-muted] mb-1 block">Sonuç</label>
+              <div className="px-3 py-2 rounded-lg bg-[--color-steel]/50 border border-[--color-graphite] text-sm font-mono text-info">
+                {maskedEur((parseFloat(siparisForm.iplik_miktar) || 0) * (parseFloat(siparisForm.iplik_birim_fiyat) || 0), loggedIn)}
+              </div>
+            </div>
+          </div>
+          {/* Boyahane */}
+          <div>
+            <label className="text-xs text-[--color-text-muted] mb-1 block">Boyahane</label>
+            <select value={siparisForm.boyahane} onChange={e => setSiparisForm(p => ({ ...p, boyahane: e.target.value }))} className={inputCls}>
+              <option value="">Seçiniz</option>
+              <option value="Aslı">Aslı</option>
+              <option value="Nesa">Nesa</option>
+              <option value="Altınbaşak">Altınbaşak</option>
+              <option value="Yağmur">Yağmur</option>
+            </select>
           </div>
           <div className="flex gap-2 pt-3 border-t border-[--color-graphite]">
             <button onClick={handleSiparisSubmit} disabled={!currentUser} className="px-5 py-2 rounded-lg bg-info text-white text-sm font-medium hover:bg-info/80 disabled:opacity-50">{editSiparisId ? 'Güncelle' : 'Ekle'}</button>
@@ -927,7 +1033,7 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
 
         {/* Column headers */}
         <div className="grid grid-cols-2 border-b border-[--color-graphite]">
-          <div className="grid grid-cols-[24px_85px_minmax(0,1fr)_120px_50px_120px_60px_50px_28px] border-r border-[--color-graphite] px-1">
+          <div className="grid grid-cols-[24px_85px_minmax(0,1fr)_120px_50px_120px_60px_50px_48px] border-r border-[--color-graphite] px-1">
             <div className="py-2 text-[9px] text-[--color-text-muted] text-center" title="Hesap Dışı">HD</div>
             <div className="px-2 py-2 text-xs text-[--color-text-muted]">Tarih</div>
             <div className="px-2 py-2 text-xs text-[--color-text-muted]">Ödeme Adı</div>
@@ -938,7 +1044,7 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
             <div className="px-2 py-2 text-xs text-[--color-text-muted] text-center">Kişi</div>
             <div></div>
           </div>
-          <div className="grid grid-cols-[24px_85px_minmax(0,1fr)_90px_90px_110px_40px_55px_45px_28px] px-1">
+          <div className="grid grid-cols-[24px_85px_minmax(0,1fr)_90px_90px_110px_40px_55px_45px_48px] px-1">
             <div className="py-2 text-[9px] text-[--color-text-muted] text-center" title="Hesap Dışı">HD</div>
             <div className="px-2 py-2 text-xs text-[--color-text-muted]">Tarih</div>
             <div className="px-2 py-2 text-xs text-[--color-text-muted]">Müşteri</div>
@@ -997,7 +1103,7 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
                 return (
                   <div key={`row-${uw.key}-${i}`} className={`grid grid-cols-2 border-b border-[--color-graphite]/50 ${(o || s) ? 'hover:bg-[--color-steel]/30' : ''}`}>
                     {/* Ödeme side */}
-                    <div className={`border-r border-[--color-graphite]/30 ${o ? `grid grid-cols-[24px_85px_minmax(0,1fr)_120px_50px_120px_60px_50px_28px] px-1 h-9 overflow-hidden ${o.hesap_disi ? 'opacity-40' : ''}` : ''}`}>
+                    <div className={`border-r border-[--color-graphite]/30 ${o ? `grid grid-cols-[24px_85px_minmax(0,1fr)_120px_50px_120px_60px_50px_48px] px-1 h-9 overflow-hidden ${o.hesap_disi ? 'opacity-40' : ''}` : ''}`}>
                       {o ? (
                         <>
                           <div className="flex items-center justify-center">
@@ -1030,6 +1136,7 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
                           </div>
                           <div className="px-1 py-2 text-center text-[10px] text-[--color-text-muted] truncate">{o.updated_by || '-'}</div>
                           <div className="py-2 flex gap-0.5 justify-end">
+                            <button onClick={async () => { if (!currentUser) return; await api.kenanToggleOdemePlanlamada(o.id, !o.planlamada); loadAll() }} className={o.planlamada ? 'text-amber-400' : 'text-[--color-text-muted] hover:text-amber-400'} title={o.planlamada ? 'Planlamadan çıkar' : 'Planlamaya ekle'}><CalendarCheck size={11} /></button>
                             <button onClick={() => { if (!currentUser) return; startEditOdeme(o) }} className="text-[--color-text-muted] hover:text-info"><Edit3 size={11} /></button>
                             <button onClick={async () => { if (!currentUser) return; if (confirm('Sil?')) { await api.kenanDeleteOdeme(o.id, currentUser); loadAll() } }} className="text-[--color-text-muted] hover:text-red-400"><Trash2 size={11} /></button>
                           </div>
@@ -1039,7 +1146,7 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
                       )}
                     </div>
                     {/* Sipariş side */}
-                    <div className={s ? `grid grid-cols-[24px_85px_minmax(0,1fr)_90px_90px_110px_40px_55px_45px_28px] px-1 h-9 overflow-hidden ${s.hesap_disi ? 'opacity-40' : ''}` : ''}>
+                    <div className={s ? `grid grid-cols-[24px_85px_minmax(0,1fr)_90px_90px_110px_40px_55px_45px_48px] px-1 h-9 overflow-hidden ${s.hesap_disi ? 'opacity-40' : ''}` : ''}>
                       {s ? (
                         <>
                           <div className="flex items-center justify-center">
@@ -1075,6 +1182,18 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
                           </div>
                           <div className="px-1 py-2 text-center text-[10px] text-[--color-text-muted] truncate">{s.updated_by || '-'}</div>
                           <div className="py-2 flex gap-0.5 justify-end">
+                            <button onClick={async () => {
+                              if (!currentUser) return
+                              if (plannedSiparisIds.has(s.id)) {
+                                // planlama kaydını bul ve sil
+                                const planData = await api.kenanGetPlanlama()
+                                const planItem = planData.find((p: any) => p.siparis_id === s.id)
+                                if (planItem) await api.kenanRemovePlanlama(planItem.id)
+                              } else {
+                                await api.kenanAddPlanlama(s.id, currentUser)
+                              }
+                              loadAll()
+                            }} className={plannedSiparisIds.has(s.id) ? 'text-amber-400' : 'text-[--color-text-muted] hover:text-amber-400'} title={plannedSiparisIds.has(s.id) ? 'Planlamadan çıkar' : 'Planlamaya ekle'}><CalendarCheck size={11} /></button>
                             <button onClick={() => { if (!currentUser) return; startEditSiparis(s) }} className="text-[--color-text-muted] hover:text-info"><Edit3 size={11} /></button>
                             <button onClick={async () => { if (!currentUser) return; if (confirm('Sil?')) { await api.kenanDeleteSiparis(s.id, currentUser); loadAll() } }} className="text-[--color-text-muted] hover:text-red-400"><Trash2 size={11} /></button>
                           </div>
@@ -1103,7 +1222,7 @@ function SiparisOdemeSection({ currentUser }: { currentUser: string }) {
 // ==================== ANA SAYFA ====================
 
 export function KenanOzsoyPage() {
-  const [tab, setTab] = useState<'cari' | 'siparis'>('cari')
+  const [tab, setTab] = useState<'cari' | 'siparis' | 'planlama'>('cari')
   const [currentUser, setCurrentUser] = useState(() => localStorage.getItem('kenan_current_user') || '')
   const [currentRole, setCurrentRole] = useState(() => localStorage.getItem('kenan_current_role') || '')
 
@@ -1139,9 +1258,13 @@ export function KenanOzsoyPage() {
           className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${tab === 'siparis' ? 'bg-copper text-white' : 'text-[--color-text-secondary] hover:text-[--color-text-primary]'}`}>
           Sipariş & Ödeme Takip
         </button>
+        <button onClick={() => setTab('planlama')}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${tab === 'planlama' ? 'bg-copper text-white' : 'text-[--color-text-secondary] hover:text-[--color-text-primary]'}`}>
+          Ödeme Planlama
+        </button>
       </div>
 
-      {tab === 'cari' ? <CariSection currentUser={currentUser} /> : <SiparisOdemeSection currentUser={currentUser} />}
+      {tab === 'cari' ? <CariSection currentUser={currentUser} /> : tab === 'siparis' ? <SiparisOdemeSection currentUser={currentUser} /> : <OdemePlanlamaSection currentUser={currentUser} />}
     </div>
   )
 }

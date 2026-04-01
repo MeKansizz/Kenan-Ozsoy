@@ -245,7 +245,7 @@ router.get('/odemeler/summary', (_req, res) => {
 router.post('/odemeler', (req, res) => {
   const db = getDb()
   const id = randomUUID()
-  const { tarih, odeme_adi, tl_tutar, tutar_eur, kur, doviz, durum, donem, notlar, hesap_disi, user } = req.body
+  const { tarih, odeme_adi, tl_tutar, tutar_eur, kur, doviz, durum, donem, notlar, hesap_disi, kategori, user } = req.body
 
   // Currency-aware EUR calculation
   let finalEur = tutar_eur || 0
@@ -260,9 +260,9 @@ router.post('/odemeler', (req, res) => {
   const now = new Date().toISOString()
 
   db.prepare(`
-    INSERT INTO kenan_odemeler (id, tarih, odeme_adi, tl_tutar, tutar_eur, kur, doviz, tl_karsiligi, durum, donem, notlar, hesap_disi, updated_by, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(id, tarih, odeme_adi, finalTl, finalEur, kur || null, currency, tl_karsiligi || null, durum || 'beklemede', donem || null, notlar || null, hesap_disi ? 1 : 0, user || null, now)
+    INSERT INTO kenan_odemeler (id, tarih, odeme_adi, tl_tutar, tutar_eur, kur, doviz, tl_karsiligi, durum, donem, notlar, hesap_disi, kategori, updated_by, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(id, tarih, odeme_adi, finalTl, finalEur, kur || null, currency, tl_karsiligi || null, durum || 'beklemede', donem || null, notlar || null, hesap_disi ? 1 : 0, kategori || '', user || null, now)
 
   logAudit('kenan_odemeler', id, 'create', { tarih, odeme_adi, tl_tutar: finalTl, tutar_eur: finalEur, kur, durum }, user || 'system')
   res.json({ id })
@@ -270,7 +270,7 @@ router.post('/odemeler', (req, res) => {
 
 router.put('/odemeler/:id', (req, res) => {
   const db = getDb()
-  const { tarih, odeme_adi, tl_tutar, tutar_eur, kur, doviz, durum, donem, notlar, hesap_disi, user } = req.body
+  const { tarih, odeme_adi, tl_tutar, tutar_eur, kur, doviz, durum, donem, notlar, hesap_disi, kategori, user } = req.body
 
   // Get old values for audit
   const old = db.prepare('SELECT * FROM kenan_odemeler WHERE id = ?').get(req.params.id) as any
@@ -288,9 +288,9 @@ router.put('/odemeler/:id', (req, res) => {
   const now = new Date().toISOString()
 
   db.prepare(`
-    UPDATE kenan_odemeler SET tarih=?, odeme_adi=?, tl_tutar=?, tutar_eur=?, kur=?, doviz=?, tl_karsiligi=?, durum=?, donem=?, notlar=?, hesap_disi=?, updated_by=?, updated_at=?
+    UPDATE kenan_odemeler SET tarih=?, odeme_adi=?, tl_tutar=?, tutar_eur=?, kur=?, doviz=?, tl_karsiligi=?, durum=?, donem=?, notlar=?, hesap_disi=?, kategori=?, updated_by=?, updated_at=?
     WHERE id=?
-  `).run(tarih, odeme_adi, finalTl, finalEur, kur || null, currency, tl_karsiligi || null, durum || 'beklemede', donem || null, notlar || null, hesap_disi !== undefined ? (hesap_disi ? 1 : 0) : (old.hesap_disi || 0), user || null, now, req.params.id)
+  `).run(tarih, odeme_adi, finalTl, finalEur, kur || null, currency, tl_karsiligi || null, durum || 'beklemede', donem || null, notlar || null, hesap_disi !== undefined ? (hesap_disi ? 1 : 0) : (old.hesap_disi || 0), kategori !== undefined ? (kategori || '') : (old.kategori || ''), user || null, now, req.params.id)
 
   // Build changes diff
   const changes: Record<string, { old: any; new: any }> = {}
@@ -344,15 +344,15 @@ router.get('/siparisler/summary', (_req, res) => {
 router.post('/siparisler', (req, res) => {
   const db = getDb()
   const id = randomUUID()
-  const { tarih, fatura_no, musteri, siparis_no, tutar, kur, doviz, vade_gun, durum, notlar, hesap_disi, user } = req.body
+  const { tarih, fatura_no, musteri, siparis_no, tutar, kur, doviz, vade_gun, durum, notlar, hesap_disi, maliyet_iplik, maliyet_boya, maliyet_navlun, iplik_cinsi, iplik_miktar, iplik_birim_fiyat, boyahane, user } = req.body
 
   const tutar_eur = tutar // EUR or USD amount directly
   const now = new Date().toISOString()
 
   db.prepare(`
-    INSERT INTO kenan_siparisler (id, tarih, fatura_no, musteri, siparis_no, tutar, kur, doviz, tutar_eur, vade_gun, durum, notlar, hesap_disi, updated_by, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(id, tarih, fatura_no || null, musteri, siparis_no || null, tutar, kur || null, doviz || 'EUR', tutar_eur, vade_gun || null, durum || 'beklemede', notlar || null, hesap_disi ? 1 : 0, user || null, now)
+    INSERT INTO kenan_siparisler (id, tarih, fatura_no, musteri, siparis_no, tutar, kur, doviz, tutar_eur, vade_gun, durum, notlar, hesap_disi, maliyet_iplik, maliyet_boya, maliyet_navlun, iplik_cinsi, iplik_miktar, iplik_birim_fiyat, boyahane, updated_by, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(id, tarih, fatura_no || null, musteri, siparis_no || null, tutar, kur || null, doviz || 'EUR', tutar_eur, vade_gun || null, durum || 'beklemede', notlar || null, hesap_disi ? 1 : 0, maliyet_iplik || 0, maliyet_boya || 0, maliyet_navlun || 0, iplik_cinsi || '', iplik_miktar || 0, iplik_birim_fiyat || 0, boyahane || '', user || null, now)
 
   logAudit('kenan_siparisler', id, 'create', { tarih, musteri, tutar, doviz, durum }, user || 'system')
   res.json({ id })
@@ -360,7 +360,7 @@ router.post('/siparisler', (req, res) => {
 
 router.put('/siparisler/:id', (req, res) => {
   const db = getDb()
-  const { tarih, fatura_no, musteri, siparis_no, tutar, kur, doviz, tutar_eur, vade_gun, durum, notlar, hesap_disi, user } = req.body
+  const { tarih, fatura_no, musteri, siparis_no, tutar, kur, doviz, tutar_eur, vade_gun, durum, notlar, hesap_disi, maliyet_iplik, maliyet_boya, maliyet_navlun, iplik_cinsi, iplik_miktar, iplik_birim_fiyat, boyahane, user } = req.body
 
   const old = db.prepare('SELECT * FROM kenan_siparisler WHERE id = ?').get(req.params.id) as any
   if (!old) return res.status(404).json({ message: 'Kayıt bulunamadı' })
@@ -368,9 +368,9 @@ router.put('/siparisler/:id', (req, res) => {
   const now = new Date().toISOString()
 
   db.prepare(`
-    UPDATE kenan_siparisler SET tarih=?, fatura_no=?, musteri=?, siparis_no=?, tutar=?, kur=?, doviz=?, tutar_eur=?, vade_gun=?, durum=?, notlar=?, hesap_disi=?, updated_by=?, updated_at=?
+    UPDATE kenan_siparisler SET tarih=?, fatura_no=?, musteri=?, siparis_no=?, tutar=?, kur=?, doviz=?, tutar_eur=?, vade_gun=?, durum=?, notlar=?, hesap_disi=?, maliyet_iplik=?, maliyet_boya=?, maliyet_navlun=?, iplik_cinsi=?, iplik_miktar=?, iplik_birim_fiyat=?, boyahane=?, updated_by=?, updated_at=?
     WHERE id=?
-  `).run(tarih, fatura_no || null, musteri, siparis_no || null, tutar, kur || null, doviz || 'EUR', tutar_eur || tutar, vade_gun || null, durum || 'beklemede', notlar || null, hesap_disi !== undefined ? (hesap_disi ? 1 : 0) : (old.hesap_disi || 0), user || null, now, req.params.id)
+  `).run(tarih, fatura_no || null, musteri, siparis_no || null, tutar, kur || null, doviz || 'EUR', tutar_eur || tutar, vade_gun || null, durum || 'beklemede', notlar || null, hesap_disi !== undefined ? (hesap_disi ? 1 : 0) : (old.hesap_disi || 0), maliyet_iplik !== undefined ? (maliyet_iplik || 0) : (old.maliyet_iplik || 0), maliyet_boya !== undefined ? (maliyet_boya || 0) : (old.maliyet_boya || 0), maliyet_navlun !== undefined ? (maliyet_navlun || 0) : (old.maliyet_navlun || 0), iplik_cinsi !== undefined ? (iplik_cinsi || '') : (old.iplik_cinsi || ''), iplik_miktar !== undefined ? (iplik_miktar || 0) : (old.iplik_miktar || 0), iplik_birim_fiyat !== undefined ? (iplik_birim_fiyat || 0) : (old.iplik_birim_fiyat || 0), boyahane !== undefined ? (boyahane || '') : (old.boyahane || ''), user || null, now, req.params.id)
 
   const changes: Record<string, { old: any; new: any }> = {}
   const fields = ['tarih', 'fatura_no', 'musteri', 'siparis_no', 'tutar', 'kur', 'doviz', 'vade_gun', 'durum', 'notlar']
@@ -393,6 +393,116 @@ router.delete('/siparisler/:id', (req, res) => {
   const old = db.prepare('SELECT * FROM kenan_siparisler WHERE id = ?').get(req.params.id)
   db.prepare('DELETE FROM kenan_siparisler WHERE id = ?').run(req.params.id)
   logAudit('kenan_siparisler', req.params.id, 'delete', old, user || 'system')
+  res.json({ success: true })
+})
+
+// === ÖDEME PLANLAMADA TOGGLE ===
+
+router.put('/odemeler/:id/planlamada', (req, res) => {
+  const db = getDb()
+  const { planlamada } = req.body
+  const val = planlamada ? 1 : 0
+  // If adding to plan and no plan_sira yet, assign next sira
+  if (val === 1) {
+    const current = db.prepare('SELECT plan_sira FROM kenan_odemeler WHERE id = ?').get(req.params.id) as any
+    if (!current?.plan_sira) {
+      const max = (db.prepare('SELECT COALESCE(MAX(plan_sira), 0) as m FROM kenan_odemeler').get() as any).m
+      const maxPlan = (db.prepare('SELECT COALESCE(MAX(sira), 0) as m FROM kenan_planlama').get() as any).m
+      db.prepare('UPDATE kenan_odemeler SET planlamada = 1, plan_sira = ? WHERE id = ?').run(Math.max(max, maxPlan) + 1, req.params.id)
+      return res.json({ success: true })
+    }
+  }
+  db.prepare('UPDATE kenan_odemeler SET planlamada = ? WHERE id = ?').run(val, req.params.id)
+  res.json({ success: true })
+})
+
+// === ÖDEME PLAN SIRA ===
+
+router.put('/odemeler/:id/plan-sira', (req, res) => {
+  const db = getDb()
+  const { sira } = req.body
+  db.prepare('UPDATE kenan_odemeler SET plan_sira = ? WHERE id = ?').run(sira, req.params.id)
+  res.json({ success: true })
+})
+
+router.post('/planlama/init-sira', (_req, res) => {
+  const db = getDb()
+  const rows = db.prepare('SELECT id FROM kenan_odemeler WHERE plan_sira IS NULL AND (hesap_disi IS NULL OR hesap_disi = 0) ORDER BY tarih ASC').all() as any[]
+  if (rows.length === 0) { res.json({ initialized: 0 }); return }
+  const max = (db.prepare('SELECT COALESCE(MAX(plan_sira), 0) as m FROM kenan_odemeler').get() as any).m
+  const stmt = db.prepare('UPDATE kenan_odemeler SET plan_sira = ? WHERE id = ?')
+  db.transaction(() => { rows.forEach((r: any, i: number) => stmt.run(max + i + 1, r.id)) })()
+  res.json({ initialized: rows.length })
+})
+
+// === PLANLAMA ===
+
+router.get('/planlama', (_req, res) => {
+  const db = getDb()
+  const rows = db.prepare(`
+    SELECT p.id, p.siparis_id, p.sira, p.created_by, p.created_at,
+           s.tarih, s.musteri, s.siparis_no, s.fatura_no, s.tutar, s.kur, s.doviz, s.tutar_eur, s.vade_gun, s.durum
+    FROM kenan_planlama p
+    JOIN kenan_siparisler s ON p.siparis_id = s.id
+    ORDER BY p.sira ASC
+  `).all()
+  res.json(rows)
+})
+
+router.post('/planlama', (req, res) => {
+  const db = getDb()
+  const { siparis_id, sira, user } = req.body
+  const existing = db.prepare('SELECT id FROM kenan_planlama WHERE siparis_id = ?').get(siparis_id)
+  if (existing) {
+    res.status(400).json({ message: 'Bu sipariş zaten plana eklenmiş' })
+    return
+  }
+  const id = randomUUID()
+  const finalSira = sira ?? (db.prepare('SELECT COALESCE(MAX(sira), 0) + 1 as next FROM kenan_planlama').get() as any).next
+  db.prepare('INSERT INTO kenan_planlama (id, siparis_id, sira, created_by) VALUES (?, ?, ?, ?)').run(id, siparis_id, finalSira, user || 'system')
+  res.json({ id, siparis_id, sira: finalSira })
+})
+
+router.put('/planlama/:id/sira', (req, res) => {
+  const db = getDb()
+  const { sira } = req.body
+  db.prepare('UPDATE kenan_planlama SET sira = ? WHERE id = ?').run(sira, req.params.id)
+  res.json({ success: true })
+})
+
+router.delete('/planlama/:id', (req, res) => {
+  const db = getDb()
+  db.prepare('DELETE FROM kenan_planlama WHERE id = ?').run(req.params.id)
+  res.json({ success: true })
+})
+
+// === PLAN MARKERS (boş bakiye satırları) ===
+
+router.get('/planlama/markers', (_req, res) => {
+  const db = getDb()
+  const rows = db.prepare('SELECT id, sira, label, created_at FROM kenan_plan_markers ORDER BY sira ASC').all()
+  res.json(rows)
+})
+
+router.post('/planlama/markers', (req, res) => {
+  const db = getDb()
+  const { sira, label } = req.body
+  const id = randomUUID()
+  const finalSira = sira ?? (db.prepare('SELECT COALESCE(MAX(sira), 0) + 1 as next FROM kenan_plan_markers').get() as any).next
+  db.prepare('INSERT INTO kenan_plan_markers (id, sira, label) VALUES (?, ?, ?)').run(id, finalSira, label || '')
+  res.json({ id, sira: finalSira })
+})
+
+router.put('/planlama/markers/:id/sira', (req, res) => {
+  const db = getDb()
+  const { sira } = req.body
+  db.prepare('UPDATE kenan_plan_markers SET sira = ? WHERE id = ?').run(sira, req.params.id)
+  res.json({ success: true })
+})
+
+router.delete('/planlama/markers/:id', (req, res) => {
+  const db = getDb()
+  db.prepare('DELETE FROM kenan_plan_markers WHERE id = ?').run(req.params.id)
   res.json({ success: true })
 })
 
