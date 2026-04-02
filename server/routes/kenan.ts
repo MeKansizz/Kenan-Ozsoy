@@ -403,8 +403,9 @@ function calcSiraByDate(db: any, tarih: string): number {
   // Tüm plan öğelerini tarih ve sira ile çek
   const odemeler = db.prepare("SELECT tarih, plan_sira as sira FROM kenan_odemeler WHERE planlamada = 1 AND (hesap_disi IS NULL OR hesap_disi = 0) AND plan_sira IS NOT NULL ORDER BY plan_sira ASC").all() as any[]
   const planlar = db.prepare("SELECT s.tarih, p.sira FROM kenan_planlama p JOIN kenan_siparisler s ON p.siparis_id = s.id ORDER BY p.sira ASC").all() as any[]
+  const maliyetler = db.prepare("SELECT termin as tarih, sira FROM kenan_planlama_maliyet ORDER BY sira ASC").all() as any[]
 
-  const all = [...odemeler, ...planlar].sort((a, b) => a.sira - b.sira)
+  const all = [...odemeler, ...planlar, ...maliyetler].sort((a, b) => a.sira - b.sira)
   if (all.length === 0) return 1
 
   // Tarihine göre doğru pozisyonu bul
@@ -452,17 +453,20 @@ router.post('/planlama/sort-by-date', (_req, res) => {
   const db = getDb()
   const odemeler = db.prepare("SELECT id, tarih, 'odeme' as tip FROM kenan_odemeler WHERE planlamada = 1 AND (hesap_disi IS NULL OR hesap_disi = 0)").all() as any[]
   const planlar = db.prepare("SELECT p.id, s.tarih, 'siparis' as tip FROM kenan_planlama p JOIN kenan_siparisler s ON p.siparis_id = s.id").all() as any[]
+  const maliyetler = db.prepare("SELECT id, termin as tarih, 'maliyet' as tip FROM kenan_planlama_maliyet").all() as any[]
 
-  const all = [...odemeler, ...planlar].sort((a, b) => (a.tarih || '').localeCompare(b.tarih || ''))
+  const all = [...odemeler, ...planlar, ...maliyetler].sort((a, b) => (a.tarih || '').localeCompare(b.tarih || ''))
 
   const stmtOdeme = db.prepare('UPDATE kenan_odemeler SET plan_sira = ? WHERE id = ?')
   const stmtPlan = db.prepare('UPDATE kenan_planlama SET sira = ? WHERE id = ?')
+  const stmtMaliyet = db.prepare('UPDATE kenan_planlama_maliyet SET sira = ? WHERE id = ?')
 
   db.transaction(() => {
     all.forEach((item, i) => {
       const sira = i + 1
       if (item.tip === 'odeme') stmtOdeme.run(sira, item.id)
-      else stmtPlan.run(sira, item.id)
+      else if (item.tip === 'siparis') stmtPlan.run(sira, item.id)
+      else stmtMaliyet.run(sira, item.id)
     })
   })()
 
@@ -511,11 +515,36 @@ router.post('/planlama', (req, res) => {
   const id = randomUUID()
   let finalSira = sira
   if (finalSira == null) {
-    // Siparişin tarihine göre doğru sıraya yerleştir
     const siparis = db.prepare('SELECT tarih FROM kenan_siparisler WHERE id = ?').get(siparis_id) as any
     finalSira = calcSiraByDate(db, siparis?.tarih || '9999-12-31')
   }
   db.prepare('INSERT INTO kenan_planlama (id, siparis_id, sira, created_by) VALUES (?, ?, ?, ?)').run(id, siparis_id, finalSira, user || 'system')
+
+  // Siparişin iplik/boya maliyetini otomatik planlamaya ekle (grup bazlı)
+  const sip = db.prepare('SELECT maliyet_iplik, maliyet_boya, iplik_termin, boya_termin, COALESCE(iplik_cinsi, \'\') as iplik_cinsi, COALESCE(boyahane, \'\') as boyahane FROM kenan_siparisler WHERE id = ?').get(siparis_id) as any
+  if (sip) {
+    // İplik maliyet — iplik_cinsi + iplik_termin grubundaki toplam
+    if (sip.iplik_termin && sip.maliyet_iplik > 0) {
+      const existingMaliyet = db.prepare('SELECT id FROM kenan_planlama_maliyet WHERE tip = ? AND termin = ? AND COALESCE(grup, \'\') = ?').get('iplik', sip.iplik_termin, sip.iplik_cinsi)
+      if (!existingMaliyet) {
+        const toplamRow = db.prepare(`SELECT SUM(maliyet_iplik) as toplam FROM kenan_siparisler WHERE iplik_termin = ? AND COALESCE(iplik_cinsi, '') = ? AND (hesap_disi IS NULL OR hesap_disi = 0)`).get(sip.iplik_termin, sip.iplik_cinsi) as any
+        const maliyetId = randomUUID()
+        const maliyetSira = calcSiraByDate(db, sip.iplik_termin)
+        db.prepare('INSERT INTO kenan_planlama_maliyet (id, tip, termin, tutar_eur, sira, grup) VALUES (?, ?, ?, ?, ?, ?)').run(maliyetId, 'iplik', sip.iplik_termin, toplamRow?.toplam || 0, maliyetSira, sip.iplik_cinsi)
+      }
+    }
+    // Boya maliyet — boyahane + boya_termin grubundaki toplam
+    if (sip.boya_termin && sip.maliyet_boya > 0) {
+      const existingMaliyet = db.prepare('SELECT id FROM kenan_planlama_maliyet WHERE tip = ? AND termin = ? AND COALESCE(grup, \'\') = ?').get('boya', sip.boya_termin, sip.boyahane)
+      if (!existingMaliyet) {
+        const toplamRow = db.prepare(`SELECT SUM(maliyet_boya) as toplam FROM kenan_siparisler WHERE boya_termin = ? AND COALESCE(boyahane, '') = ? AND (hesap_disi IS NULL OR hesap_disi = 0)`).get(sip.boya_termin, sip.boyahane) as any
+        const maliyetId = randomUUID()
+        const maliyetSira = calcSiraByDate(db, sip.boya_termin)
+        db.prepare('INSERT INTO kenan_planlama_maliyet (id, tip, termin, tutar_eur, sira, grup) VALUES (?, ?, ?, ?, ?, ?)').run(maliyetId, 'boya', sip.boya_termin, toplamRow?.toplam || 0, maliyetSira, sip.boyahane)
+      }
+    }
+  }
+
   res.json({ id, siparis_id, sira: finalSira })
 })
 
@@ -528,7 +557,35 @@ router.put('/planlama/:id/sira', (req, res) => {
 
 router.delete('/planlama/:id', (req, res) => {
   const db = getDb()
-  db.prepare('DELETE FROM kenan_planlama WHERE id = ?').run(req.params.id)
+  const plan = db.prepare('SELECT siparis_id FROM kenan_planlama WHERE id = ?').get(req.params.id) as any
+  if (plan) {
+    const sip = db.prepare('SELECT iplik_termin, boya_termin, COALESCE(iplik_cinsi, \'\') as iplik_cinsi, COALESCE(boyahane, \'\') as boyahane FROM kenan_siparisler WHERE id = ?').get(plan.siparis_id) as any
+    db.prepare('DELETE FROM kenan_planlama WHERE id = ?').run(req.params.id)
+
+    // Grup bazında başka sipariş kaldı mı kontrol et
+    if (sip?.iplik_termin) {
+      const remaining = db.prepare(`
+        SELECT COUNT(*) as cnt FROM kenan_planlama p
+        JOIN kenan_siparisler s ON s.id = p.siparis_id
+        WHERE s.iplik_termin = ? AND COALESCE(s.iplik_cinsi, '') = ? AND s.maliyet_iplik > 0
+      `).get(sip.iplik_termin, sip.iplik_cinsi) as any
+      if (remaining.cnt === 0) {
+        db.prepare('DELETE FROM kenan_planlama_maliyet WHERE tip = ? AND termin = ? AND COALESCE(grup, \'\') = ?').run('iplik', sip.iplik_termin, sip.iplik_cinsi)
+      }
+    }
+    if (sip?.boya_termin) {
+      const remaining = db.prepare(`
+        SELECT COUNT(*) as cnt FROM kenan_planlama p
+        JOIN kenan_siparisler s ON s.id = p.siparis_id
+        WHERE s.boya_termin = ? AND COALESCE(s.boyahane, '') = ? AND s.maliyet_boya > 0
+      `).get(sip.boya_termin, sip.boyahane) as any
+      if (remaining.cnt === 0) {
+        db.prepare('DELETE FROM kenan_planlama_maliyet WHERE tip = ? AND termin = ? AND COALESCE(grup, \'\') = ?').run('boya', sip.boya_termin, sip.boyahane)
+      }
+    }
+  } else {
+    db.prepare('DELETE FROM kenan_planlama WHERE id = ?').run(req.params.id)
+  }
   res.json({ success: true })
 })
 
@@ -563,6 +620,94 @@ router.put('/planlama/markers/:id/sira', (req, res) => {
 router.delete('/planlama/markers/:id', (req, res) => {
   const db = getDb()
   db.prepare('DELETE FROM kenan_plan_markers WHERE id = ?').run(req.params.id)
+  res.json({ success: true })
+})
+
+// === PLANLAMA MALİYET (iplik/boya termin grupları) ===
+
+// Termin + grup bazlı maliyet özeti (sağ taraf)
+// İplik: iplik_cinsi + iplik_termin bazında
+// Boya: boyahane + boya_termin bazında
+router.get('/planlama/maliyet-summary', (_req, res) => {
+  const db = getDb()
+  const iplik = db.prepare(`
+    SELECT iplik_termin as termin, COALESCE(iplik_cinsi, '') as grup, SUM(maliyet_iplik) as toplam, COUNT(*) as adet
+    FROM kenan_siparisler
+    WHERE iplik_termin != '' AND iplik_termin IS NOT NULL AND maliyet_iplik > 0 AND (hesap_disi IS NULL OR hesap_disi = 0)
+    GROUP BY iplik_termin, iplik_cinsi ORDER BY iplik_termin ASC
+  `).all() as any[]
+  const boya = db.prepare(`
+    SELECT boya_termin as termin, COALESCE(boyahane, '') as grup, SUM(maliyet_boya) as toplam, COUNT(*) as adet
+    FROM kenan_siparisler
+    WHERE boya_termin != '' AND boya_termin IS NOT NULL AND maliyet_boya > 0 AND (hesap_disi IS NULL OR hesap_disi = 0)
+    GROUP BY boya_termin, boyahane ORDER BY boya_termin ASC
+  `).all() as any[]
+
+  // Hangileri zaten plana eklenmiş?
+  const planned = db.prepare('SELECT tip, termin, COALESCE(grup, \'\') as grup FROM kenan_planlama_maliyet').all() as any[]
+  const plannedSet = new Set(planned.map((p: any) => `${p.tip}:${p.termin}:${p.grup}`))
+
+  // İplik kg toplamlarını iplik_entries JSON'dan hesapla
+  const allSip = db.prepare(`
+    SELECT iplik_termin, COALESCE(iplik_cinsi, '') as iplik_cinsi, COALESCE(iplik_entries, '[]') as iplik_entries, COALESCE(iplik_miktar, 0) as iplik_miktar
+    FROM kenan_siparisler
+    WHERE iplik_termin != '' AND iplik_termin IS NOT NULL AND maliyet_iplik > 0 AND (hesap_disi IS NULL OR hesap_disi = 0)
+  `).all() as any[]
+
+  const kgMap: Record<string, number> = {}
+  for (const s of allSip) {
+    const key = `${s.iplik_termin}:${s.iplik_cinsi}`
+    let kg = 0
+    try {
+      const entries = JSON.parse(s.iplik_entries || '[]')
+      if (entries.length > 0) {
+        kg = entries.reduce((sum: number, e: any) => sum + (parseFloat(e.miktar) || 0), 0)
+      } else {
+        kg = s.iplik_miktar || 0
+      }
+    } catch { kg = s.iplik_miktar || 0 }
+    kgMap[key] = (kgMap[key] || 0) + kg
+  }
+
+  res.json({
+    iplik: iplik.map(r => ({ ...r, toplam_kg: kgMap[`${r.termin}:${r.grup}`] || 0, planned: plannedSet.has(`iplik:${r.termin}:${r.grup}`) })),
+    boya: boya.map(r => ({ ...r, planned: plannedSet.has(`boya:${r.termin}:${r.grup}`) })),
+  })
+})
+
+// Plana eklenmiş maliyet satırları (sol taraf)
+router.get('/planlama/maliyet', (_req, res) => {
+  const db = getDb()
+  const rows = db.prepare('SELECT * FROM kenan_planlama_maliyet ORDER BY sira ASC').all()
+  res.json(rows)
+})
+
+// Maliyet satırını plana ekle
+router.post('/planlama/maliyet', (req, res) => {
+  const db = getDb()
+  const { tip, termin, tutar_eur, grup } = req.body
+  // Zaten var mı?
+  const existing = db.prepare('SELECT id FROM kenan_planlama_maliyet WHERE tip = ? AND termin = ? AND COALESCE(grup, \'\') = ?').get(tip, termin, grup || '')
+  if (existing) return res.status(400).json({ message: 'Bu maliyet zaten planda' })
+
+  const id = randomUUID()
+  const sira = calcSiraByDate(db, termin)
+  db.prepare('INSERT INTO kenan_planlama_maliyet (id, tip, termin, tutar_eur, sira, grup) VALUES (?, ?, ?, ?, ?, ?)').run(id, tip, termin, tutar_eur || 0, sira, grup || '')
+  res.json({ id, sira })
+})
+
+// Maliyet sıra güncelle
+router.put('/planlama/maliyet/:id/sira', (req, res) => {
+  const db = getDb()
+  const { sira } = req.body
+  db.prepare('UPDATE kenan_planlama_maliyet SET sira = ? WHERE id = ?').run(sira, req.params.id)
+  res.json({ success: true })
+})
+
+// Maliyet plandan çıkar
+router.delete('/planlama/maliyet/:id', (req, res) => {
+  const db = getDb()
+  db.prepare('DELETE FROM kenan_planlama_maliyet WHERE id = ?').run(req.params.id)
   res.json({ success: true })
 })
 

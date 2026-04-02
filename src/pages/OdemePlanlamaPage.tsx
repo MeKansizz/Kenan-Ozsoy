@@ -32,15 +32,25 @@ type SolItem =
   | { type: 'odeme'; data: Odeme; sira: number }
   | { type: 'plan'; data: PlanItem; sira: number }
   | { type: 'marker'; data: Marker; sira: number }
+  | { type: 'maliyet'; data: MaliyetPlanItem; sira: number }
 
-interface DropData { plan_id?: string; odeme_id?: string; marker_id?: string }
+interface MaliyetPlanItem {
+  id: string; tip: string; termin: string; tutar_eur: number; sira: number; grup: string;
+}
+
+interface MaliyetSummaryRow {
+  termin: string; grup: string; toplam: number; adet: number; planned: boolean; toplam_kg?: number;
+}
+
+interface DropData { plan_id?: string; odeme_id?: string; marker_id?: string; maliyet_id?: string }
 
 function extractDropData(e: React.DragEvent): DropData | null {
   const planId = e.dataTransfer.getData('plan_id')
   const odemeId = e.dataTransfer.getData('odeme_id')
   const markerId = e.dataTransfer.getData('marker_id')
-  if (!planId && !odemeId && !markerId) return null
-  return { plan_id: planId || undefined, odeme_id: odemeId || undefined, marker_id: markerId || undefined }
+  const maliyetId = e.dataTransfer.getData('maliyet_id')
+  if (!planId && !odemeId && !markerId && !maliyetId) return null
+  return { plan_id: planId || undefined, odeme_id: odemeId || undefined, marker_id: markerId || undefined, maliyet_id: maliyetId || undefined }
 }
 
 const BASLANGIC_BAKIYE = -1565867.46
@@ -57,19 +67,25 @@ export function OdemePlanlamaSection({ currentUser }: { currentUser: string }) {
   const [isDragging, setIsDragging] = useState(false)
   const [dropTarget, setDropTarget] = useState<{ idx: number; pos: 'before' | 'after' } | null>(null)
   const [cariEntries, setCariEntries] = useState<CariEntry[]>([])
+  const [maliyetPlan, setMaliyetPlan] = useState<MaliyetPlanItem[]>([])
+  const [maliyetSummary, setMaliyetSummary] = useState<{ iplik: MaliyetSummaryRow[]; boya: MaliyetSummaryRow[] }>({ iplik: [], boya: [] })
 
   const loadAll = useCallback(async () => {
     try {
-      const [o, p, m, c] = await Promise.all([
+      const [o, p, m, c, mp, ms] = await Promise.all([
         api.kenanGetOdemeler(),
         api.kenanGetPlanlama(),
         api.kenanGetPlanMarkers(),
         api.kenanGetCari({}),
+        api.kenanGetMaliyetPlan(),
+        api.kenanGetMaliyetSummary(),
       ])
       setOdemeler(o)
       setPlanItems(p)
       setMarkers(m)
       setCariEntries(c)
+      setMaliyetPlan(mp)
+      setMaliyetSummary(ms)
     } catch (e) {
       console.error('Veri yüklenemedi:', e)
     }
@@ -85,9 +101,10 @@ export function OdemePlanlamaSection({ currentUser }: { currentUser: string }) {
     })
     planItems.forEach(p => items.push({ type: 'plan', data: p, sira: p.sira }))
     markers.forEach(m => items.push({ type: 'marker', data: m, sira: m.sira }))
+    maliyetPlan.forEach(mp => items.push({ type: 'maliyet', data: mp, sira: mp.sira }))
     items.sort((a, b) => a.sira - b.sira)
     return items
-  }, [odemeler, planItems, markers])
+  }, [odemeler, planItems, markers, maliyetPlan])
 
   // Cari toplamlar
   const cariSummary = useMemo(() => {
@@ -99,7 +116,8 @@ export function OdemePlanlamaSection({ currentUser }: { currentUser: string }) {
   }, [cariEntries])
 
   // Toplamlar
-  const odemeTotal = useMemo(() => odemeler.filter(o => o.planlamada && !o.hesap_disi).reduce((s, o) => s + o.tutar_eur, 0), [odemeler])
+  const maliyetTotal = useMemo(() => maliyetPlan.reduce((s, m) => s + m.tutar_eur, 0), [maliyetPlan])
+  const odemeTotal = useMemo(() => odemeler.filter(o => o.planlamada && !o.hesap_disi).reduce((s, o) => s + o.tutar_eur, 0) + maliyetTotal, [odemeler, maliyetTotal])
   const planTotal = useMemo(() => planItems.reduce((s, p) => s + (p.tutar_eur || p.tutar), 0), [planItems])
   const denge = planTotal - odemeTotal
   const olusacakBakiye = cariSummary.net + denge
@@ -113,6 +131,9 @@ export function OdemePlanlamaSection({ currentUser }: { currentUser: string }) {
   }
   const handleDragStartMarker = (e: React.DragEvent, markerId: string) => {
     e.dataTransfer.setData('marker_id', markerId); e.dataTransfer.effectAllowed = 'move'; setIsDragging(true)
+  }
+  const handleDragStartMaliyet = (e: React.DragEvent, maliyetId: string) => {
+    e.dataTransfer.setData('maliyet_id', maliyetId); e.dataTransfer.effectAllowed = 'move'; setIsDragging(true)
   }
   const handleDragEnd = () => { setIsDragging(false); setDropTarget(null) }
 
@@ -146,6 +167,7 @@ export function OdemePlanlamaSection({ currentUser }: { currentUser: string }) {
       if (data.plan_id) await api.kenanUpdatePlanlamaSira(data.plan_id, newSira)
       else if (data.odeme_id) await api.kenanUpdateOdemePlanSira(data.odeme_id, newSira)
       else if (data.marker_id) await api.kenanUpdatePlanMarkerSira(data.marker_id, newSira)
+      else if (data.maliyet_id) await api.kenanUpdateMaliyetSira(data.maliyet_id, newSira)
       setIsDragging(false)
       loadAll()
     } catch (err) {
@@ -172,6 +194,16 @@ export function OdemePlanlamaSection({ currentUser }: { currentUser: string }) {
     try { await api.kenanRemovePlanlama(planId); loadAll() } catch {}
   }
 
+  const handleRemoveMaliyet = async (maliyetId: string) => {
+    if (!currentUser) return
+    try { await api.kenanDeleteMaliyetPlan(maliyetId); loadAll() } catch {}
+  }
+
+  const handleAddMaliyetToPlan = async (tip: string, termin: string, tutar_eur: number, grup?: string) => {
+    if (!currentUser) return
+    try { await api.kenanAddMaliyetPlan(tip, termin, tutar_eur, grup); loadAll() } catch {}
+  }
+
   // Running balance
   const runningBalances = useMemo(() => {
     let bal = 0
@@ -180,6 +212,8 @@ export function OdemePlanlamaSection({ currentUser }: { currentUser: string }) {
       else if (item.type === 'plan') {
         const p = item.data as PlanItem
         bal += (p.tutar_eur || p.tutar)
+      } else if (item.type === 'maliyet') {
+        bal -= (item.data as MaliyetPlanItem).tutar_eur
       }
       return bal
     })
@@ -259,7 +293,8 @@ export function OdemePlanlamaSection({ currentUser }: { currentUser: string }) {
           </div>
           {/* Sağ başlık */}
           <div className="flex items-center px-4 py-3 border-b border-[--color-graphite]">
-            <h3 className="text-sm font-semibold text-[--color-text-muted]">&nbsp;</h3>
+            <h3 className="text-sm font-semibold text-purple-400">MALİYET ÖZETİ</h3>
+            <span className="text-[10px] text-[--color-text-muted] ml-2">İplik & Boya termin grupları</span>
           </div>
         </div>
 
@@ -320,6 +355,35 @@ export function OdemePlanlamaSection({ currentUser }: { currentUser: string }) {
                   )
                 }
 
+                if (item.type === 'maliyet') {
+                  const mp = item.data as MaliyetPlanItem
+                  return (
+                    <div
+                      key={`ml-${mp.id}`}
+                      draggable
+                      onDragStart={e => handleDragStartMaliyet(e, mp.id)}
+                      onDragEnd={handleDragEnd}
+                      onDragOver={e => handleRowDragOver(e, idx)}
+                      onDrop={e => handleRowDrop(e, idx)}
+                      className={`grid grid-cols-[16px_70px_minmax(0,1fr)_100px_100px_70px_24px] px-1 h-9 overflow-hidden border-b border-[--color-graphite]/30 bg-purple-400/5 cursor-grab active:cursor-grabbing ${showTopLine ? 'border-t-2 border-t-emerald-400' : ''} ${showBottomLine ? 'border-b-2 border-b-emerald-400' : ''}`}
+                    >
+                      <div className="flex items-center justify-center text-[--color-text-muted]"><GripVertical size={10} /></div>
+                      <div className="px-2 py-2 text-sm text-[--color-text-primary] whitespace-nowrap">{formatDate(mp.termin)}</div>
+                      <div className="px-2 py-2 text-sm text-purple-300 min-w-0 truncate">{mp.tip === 'iplik' ? 'İplik' : 'Boya'}{mp.grup ? ` — ${mp.grup}` : ''}</div>
+                      <div className="px-2 py-2 text-right text-sm font-mono text-purple-400 whitespace-nowrap">-{maskedEur(mp.tutar_eur, loggedIn)}</div>
+                      <div className={`px-2 py-2 text-right text-[11px] font-mono whitespace-nowrap ${runningBalances[idx] >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                        {maskedEur(runningBalances[idx], loggedIn)}
+                      </div>
+                      <div className="px-2 py-2 text-center">
+                        <span className={`text-[9px] px-1 py-0.5 rounded-full ${mp.tip === 'iplik' ? 'bg-purple-400/10 text-purple-400' : 'bg-pink-400/10 text-pink-400'}`}>{mp.tip === 'iplik' ? 'İplik' : 'Boya'}</span>
+                      </div>
+                      <div className="flex items-center justify-center">
+                        <button onClick={() => handleRemoveMaliyet(mp.id)} disabled={!currentUser} className="text-[--color-text-muted]/40 hover:text-red-400 disabled:opacity-30 disabled:cursor-not-allowed" title="Planlamadan çıkar"><CalendarX2 size={11} /></button>
+                      </div>
+                    </div>
+                  )
+                }
+
                 return item.type === 'odeme' ? (
                   <div
                     key={`o-${(item.data as Odeme).id}`}
@@ -373,9 +437,114 @@ export function OdemePlanlamaSection({ currentUser }: { currentUser: string }) {
             )}
           </div>
 
-          {/* Sağ: Şimdilik boş */}
-          <div className="flex items-center justify-center">
-            <div className="text-sm text-[--color-text-muted]/30">—</div>
+          {/* Sağ: İplik & Boya Maliyet Özeti */}
+          <div className="p-3 space-y-4 overflow-y-auto" style={{ maxHeight: '600px' }}>
+            {/* İplik Termin Grupları */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xs font-semibold text-purple-400 uppercase tracking-wider">İplik Maliyetleri</span>
+                <span className="text-[10px] text-[--color-text-muted]">(cinsi + termin)</span>
+              </div>
+              {maliyetSummary.iplik.length === 0 ? (
+                <div className="text-xs text-[--color-text-muted]/50 px-2 py-3">Sipariş maliyet verisi yok</div>
+              ) : (
+                <div className="space-y-1">
+                  {maliyetSummary.iplik.map(row => (
+                    <div
+                      key={`iplik-${row.termin}-${row.grup}`}
+                      className={`flex items-center justify-between px-3 py-2 rounded-lg border transition-colors ${row.planned ? 'border-purple-400/20 bg-purple-400/5 opacity-50' : 'border-[--color-graphite] bg-[--color-midnight]/50 hover:border-purple-400/30'}`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-purple-400/10 text-purple-400 shrink-0">İplik</span>
+                        <span className="text-sm text-[--color-text-primary] font-mono shrink-0">{formatDate(row.termin)}</span>
+                        {row.grup && <span className="text-[10px] text-purple-300 truncate">{row.grup}</span>}
+                        {row.toplam_kg ? <span className="text-[10px] text-purple-400/70 shrink-0">{new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(row.toplam_kg)} kg</span> : null}
+                        <span className="text-[10px] text-[--color-text-muted] shrink-0">{row.adet} sip</span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-sm font-mono text-purple-400 whitespace-nowrap">{maskedEur(row.toplam, loggedIn)}</span>
+                        {!row.planned ? (
+                          <button
+                            onClick={() => handleAddMaliyetToPlan('iplik', row.termin, row.toplam, row.grup)}
+                            disabled={!currentUser}
+                            className="p-1 rounded-md bg-purple-400/10 text-purple-400 hover:bg-purple-400/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Planlamaya ekle"
+                          >
+                            <Plus size={12} />
+                          </button>
+                        ) : (
+                          <span className="text-[9px] text-purple-400/50 px-1">eklendi</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Boya Termin Grupları */}
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xs font-semibold text-pink-400 uppercase tracking-wider">Boya Maliyetleri</span>
+                <span className="text-[10px] text-[--color-text-muted]">(boyahane + termin)</span>
+              </div>
+              {maliyetSummary.boya.length === 0 ? (
+                <div className="text-xs text-[--color-text-muted]/50 px-2 py-3">Sipariş maliyet verisi yok</div>
+              ) : (
+                <div className="space-y-1">
+                  {maliyetSummary.boya.map(row => (
+                    <div
+                      key={`boya-${row.termin}-${row.grup}`}
+                      className={`flex items-center justify-between px-3 py-2 rounded-lg border transition-colors ${row.planned ? 'border-pink-400/20 bg-pink-400/5 opacity-50' : 'border-[--color-graphite] bg-[--color-midnight]/50 hover:border-pink-400/30'}`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-pink-400/10 text-pink-400 shrink-0">Boya</span>
+                        <span className="text-sm text-[--color-text-primary] font-mono shrink-0">{formatDate(row.termin)}</span>
+                        {row.grup && <span className="text-[10px] text-pink-300 truncate">{row.grup}</span>}
+                        <span className="text-[10px] text-[--color-text-muted] shrink-0">{row.adet} sip</span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-sm font-mono text-pink-400 whitespace-nowrap">{maskedEur(row.toplam, loggedIn)}</span>
+                        {!row.planned ? (
+                          <button
+                            onClick={() => handleAddMaliyetToPlan('boya', row.termin, row.toplam, row.grup)}
+                            disabled={!currentUser}
+                            className="p-1 rounded-md bg-pink-400/10 text-pink-400 hover:bg-pink-400/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Planlamaya ekle"
+                          >
+                            <Plus size={12} />
+                          </button>
+                        ) : (
+                          <span className="text-[9px] text-pink-400/50 px-1">eklendi</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Toplam */}
+            {(maliyetSummary.iplik.length > 0 || maliyetSummary.boya.length > 0) && (
+              <div className="border-t border-[--color-graphite] pt-3">
+                <div className="flex items-center justify-between px-2">
+                  <span className="text-xs text-[--color-text-muted]">Toplam Maliyet</span>
+                  <span className="text-sm font-bold font-mono text-[--color-text-primary]">
+                    {maskedEur(
+                      maliyetSummary.iplik.reduce((s, r) => s + r.toplam, 0) +
+                      maliyetSummary.boya.reduce((s, r) => s + r.toplam, 0),
+                      loggedIn
+                    )}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between px-2 mt-1">
+                  <span className="text-[10px] text-[--color-text-muted]">Planlamadaki</span>
+                  <span className="text-xs font-mono text-purple-400/70">
+                    {maskedEur(maliyetTotal, loggedIn)}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

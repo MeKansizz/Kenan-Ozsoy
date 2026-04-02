@@ -82,6 +82,15 @@ export function initSchema() {
       created_at TEXT DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS kenan_planlama_maliyet (
+      id TEXT PRIMARY KEY,
+      tip TEXT NOT NULL,
+      termin TEXT NOT NULL,
+      tutar_eur REAL DEFAULT 0,
+      sira REAL DEFAULT 0,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS kenan_audit_log (
       id TEXT PRIMARY KEY,
       table_name TEXT NOT NULL,
@@ -162,5 +171,10 @@ export function initSchema() {
   }
   if (!sipCols.find((c: any) => c.name === 'iplik_entries')) {
     db.exec("ALTER TABLE kenan_siparisler ADD COLUMN iplik_entries TEXT DEFAULT '[]'")
+  }
+  // Migration: add grup column to planlama_maliyet if missing (iplik_cinsi veya boyahane)
+  const maliyetCols = db.prepare("PRAGMA table_info(kenan_planlama_maliyet)").all() as any[]
+  if (maliyetCols.length > 0 && !maliyetCols.find((c: any) => c.name === 'grup')) {
+    db.exec("ALTER TABLE kenan_planlama_maliyet ADD COLUMN grup TEXT DEFAULT ''")
   }
 }

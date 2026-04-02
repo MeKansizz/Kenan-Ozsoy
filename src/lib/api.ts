@@ -74,4 +74,11 @@ export const api = {
   kenanCreatePlanMarker: (sira?: number) => request<any>('/kenan/planlama/markers', { method: 'POST', body: JSON.stringify({ sira }) }),
   kenanUpdatePlanMarkerSira: (id: string, sira: number) => request<any>(`/kenan/planlama/markers/${id}/sira`, { method: 'PUT', body: JSON.stringify({ sira }) }),
   kenanDeletePlanMarker: (id: string) => request<any>(`/kenan/planlama/markers/${id}`, { method: 'DELETE' }),
+
+  // Planlama Maliyet (iplik/boya termin grupları)
+  kenanGetMaliyetSummary: () => request<{ iplik: any[]; boya: any[] }>('/kenan/planlama/maliyet-summary'),
+  kenanGetMaliyetPlan: () => request<any[]>('/kenan/planlama/maliyet'),
+  kenanAddMaliyetPlan: (tip: string, termin: string, tutar_eur: number, grup?: string) => request<any>('/kenan/planlama/maliyet', { method: 'POST', body: JSON.stringify({ tip, termin, tutar_eur, grup }) }),
+  kenanUpdateMaliyetSira: (id: string, sira: number) => request<any>(`/kenan/planlama/maliyet/${id}/sira`, { method: 'PUT', body: JSON.stringify({ sira }) }),
+  kenanDeleteMaliyetPlan: (id: string) => request<any>(`/kenan/planlama/maliyet/${id}`, { method: 'DELETE' }),
 }
