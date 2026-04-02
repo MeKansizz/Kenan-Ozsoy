@@ -398,17 +398,39 @@ router.delete('/siparisler/:id', (req, res) => {
 
 // === ÖDEME PLANLAMADA TOGGLE ===
 
+// Tarih sırasına göre doğru sira hesapla
+function calcSiraByDate(db: any, tarih: string): number {
+  // Tüm plan öğelerini tarih ve sira ile çek
+  const odemeler = db.prepare("SELECT tarih, plan_sira as sira FROM kenan_odemeler WHERE planlamada = 1 AND (hesap_disi IS NULL OR hesap_disi = 0) AND plan_sira IS NOT NULL ORDER BY plan_sira ASC").all() as any[]
+  const planlar = db.prepare("SELECT s.tarih, p.sira FROM kenan_planlama p JOIN kenan_siparisler s ON p.siparis_id = s.id ORDER BY p.sira ASC").all() as any[]
+
+  const all = [...odemeler, ...planlar].sort((a, b) => a.sira - b.sira)
+  if (all.length === 0) return 1
+
+  // Tarihine göre doğru pozisyonu bul
+  let insertIdx = all.length // default: sona ekle
+  for (let i = 0; i < all.length; i++) {
+    if (tarih <= all[i].tarih) {
+      insertIdx = i
+      break
+    }
+  }
+
+  // Sira hesapla (iki komşu arasında)
+  if (insertIdx === 0) return all[0].sira - 1
+  if (insertIdx >= all.length) return all[all.length - 1].sira + 1
+  return (all[insertIdx - 1].sira + all[insertIdx].sira) / 2
+}
+
 router.put('/odemeler/:id/planlamada', (req, res) => {
   const db = getDb()
   const { planlamada } = req.body
   const val = planlamada ? 1 : 0
-  // If adding to plan and no plan_sira yet, assign next sira
   if (val === 1) {
-    const current = db.prepare('SELECT plan_sira FROM kenan_odemeler WHERE id = ?').get(req.params.id) as any
+    const current = db.prepare('SELECT plan_sira, tarih FROM kenan_odemeler WHERE id = ?').get(req.params.id) as any
     if (!current?.plan_sira) {
-      const max = (db.prepare('SELECT COALESCE(MAX(plan_sira), 0) as m FROM kenan_odemeler').get() as any).m
-      const maxPlan = (db.prepare('SELECT COALESCE(MAX(sira), 0) as m FROM kenan_planlama').get() as any).m
-      db.prepare('UPDATE kenan_odemeler SET planlamada = 1, plan_sira = ? WHERE id = ?').run(Math.max(max, maxPlan) + 1, req.params.id)
+      const sira = calcSiraByDate(db, current?.tarih || '9999-12-31')
+      db.prepare('UPDATE kenan_odemeler SET planlamada = 1, plan_sira = ? WHERE id = ?').run(sira, req.params.id)
       return res.json({ success: true })
     }
   }
@@ -458,7 +480,12 @@ router.post('/planlama', (req, res) => {
     return
   }
   const id = randomUUID()
-  const finalSira = sira ?? (db.prepare('SELECT COALESCE(MAX(sira), 0) + 1 as next FROM kenan_planlama').get() as any).next
+  let finalSira = sira
+  if (finalSira == null) {
+    // Siparişin tarihine göre doğru sıraya yerleştir
+    const siparis = db.prepare('SELECT tarih FROM kenan_siparisler WHERE id = ?').get(siparis_id) as any
+    finalSira = calcSiraByDate(db, siparis?.tarih || '9999-12-31')
+  }
   db.prepare('INSERT INTO kenan_planlama (id, siparis_id, sira, created_by) VALUES (?, ?, ?, ?)').run(id, siparis_id, finalSira, user || 'system')
   res.json({ id, siparis_id, sira: finalSira })
 })
