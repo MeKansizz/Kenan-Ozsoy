@@ -20,17 +20,25 @@ Kayteks tekstil firmasının Kenan Özsoy ile cari hesap, sipariş ve ödeme tak
 ```
 kenan-ozsoy/
 ├── src/
-│   ├── pages/KenanOzsoyPage.tsx   # Ana sayfa (tek dosya, tüm UI)
-│   ├── lib/api.ts                 # API client (fetch wrapper)
-│   ├── main.tsx                   # React entry
-│   └── styles/                    # CSS dosyaları
+│   ├── pages/
+│   │   ├── KenanOzsoyPage.tsx      # Ana sayfa (layout, login, tab yönetimi)
+│   │   ├── OdemelerPage.tsx        # Ödemeler sekmesi (kategori toplamları dahil)
+│   │   ├── SiparislerPage.tsx      # Siparişler sekmesi (termin tarihleri dahil)
+│   │   └── OdemePlanlamaPage.tsx   # Planlama sekmesi (cari bilgi + oluşacak bakiye)
+│   ├── components/
+│   │   └── Modal.tsx               # Ortak modal bileşeni
+│   ├── lib/
+│   │   ├── api.ts                  # API client (fetch wrapper)
+│   │   └── kenan-utils.ts          # Ortak util fonksiyonları (formatEur, formatTl, formatDate vb.)
+│   ├── main.tsx                    # React entry
+│   └── styles/                     # CSS dosyaları
 ├── server/
-│   ├── index.ts                   # Express sunucu (port 3002)
-│   ├── db/schema.ts               # SQLite schema + connection
-│   ├── routes/kenan.ts            # Tüm API route'ları
-│   └── seed-kenan.ts              # Veritabanı seed scripti
-├── data/kenan.db                  # SQLite veritabanı (gitignore)
-├── vite.config.ts                 # Vite config (port 5174, proxy → 3002)
+│   ├── index.ts                    # Express sunucu (port 3001)
+│   ├── db/schema.ts                # SQLite schema + migration'lar
+│   ├── routes/kenan.ts             # Tüm API route'ları
+│   └── seed-kenan.ts               # Veritabanı seed scripti
+├── data/kenan.db                   # SQLite veritabanı (gitignore)
+├── vite.config.ts                  # Vite config (port 5174, proxy → 3001)
 └── package.json
 ```
 
@@ -43,7 +51,7 @@ npm run dev
 # Sadece client (port 5174)
 npm run dev:client
 
-# Sadece server (port 3002)
+# Sadece server (port 3001)
 npm run dev:server
 
 # Veritabanı seed
@@ -118,10 +126,20 @@ pm2 start finans    # Başlat
 ### kenan_odemeler
 Ödeme kayıtları (TL → EUR dönüşümlü)
 - `id` TEXT PK, `tarih`, `odeme_adi`, `tl_tutar`, `tutar_eur`, `kur`, `durum`, `donem`, `notlar`, `updated_by`
+- `kategori` TEXT DEFAULT 'Muhtelif' — Ödeme kategorisi (Çek, Banka, Muhtelif, Maaş / SGK, İplik Cari, İplik İhtiyaç, Boyahane)
+- `planlamada` INTEGER DEFAULT 0 — Planlamaya dahil mi (0/1)
+- `plan_sira` INTEGER DEFAULT 0 — Planlama sıralama numarası
+- `hesap_disi` INTEGER DEFAULT 0 — Hesap dışı mı (0/1)
 
 ### kenan_siparisler
 Sipariş kayıtları (EUR/USD)
 - `id` TEXT PK, `tarih`, `fatura_no`, `musteri`, `siparis_no`, `tutar`, `kur`, `doviz`, `tutar_eur`, `vade_gun`, `durum`, `notlar`, `updated_by`
+- `maliyet_iplik` REAL DEFAULT 0 — İplik maliyet
+- `maliyet_boya` REAL DEFAULT 0 — Boya maliyet
+- `maliyet_boyahane` TEXT DEFAULT '' — Boyahane ismi
+- `maliyet_navlun` REAL DEFAULT 0 — Navlun maliyet
+- `iplik_termin` TEXT DEFAULT '' — İplik termin tarihi
+- `boya_termin` TEXT DEFAULT '' — Boya termin tarihi
 
 ### kenan_users
 Kullanıcı yönetimi (şifreli giriş)
@@ -158,11 +176,43 @@ DELETE /api/kenan/siparisler/:id               # Sipariş sil
 
 ## UI Yapısı
 
-### Sekmeler
-1. **Cari Hesap** - Sipariş + ödeme birleşik tablo (devir bakiye: -1.488.421,76 €)
-2. **Sipariş & Ödeme Takip** - İki panel:
-   - Sol: Ödemeler (TL → EUR, TCMB kuru ile otomatik dönüşüm)
-   - Sağ: Siparişler (EUR/USD)
+### Üst Kısım Layout
+- Sol: Başlık "Cari Hesap Nakit Akış"
+- Sağ: Login paneli + Son Girişler dropdown + Deploy kutusu (yan yana)
+- Son Girişler: Tıklanınca aşağı açılan dropdown panel (Clock ikonu + son giriş yapan kullanıcı adı)
+
+### Sekmeler (Tab Bar — başlığın altında)
+1. **Cari Hesap** — Sipariş + ödeme birleşik tablo (devir bakiye kartları)
+2. **Ödemeler** — Ödeme yönetimi + kategori bazlı toplam/tamamlanan/kalan özeti
+3. **Siparişler** — Sipariş yönetimi (termin tarihleri, maliyet sütunları)
+4. **Planlama** — Ödeme planlama + cari bilgi kartları + oluşacak bakiye
+
+### Cari Hesap Sekmesi
+- Devir bakiye, toplam giren (sipariş), toplam çıkan (ödeme), net bakiye kartları
+- Hafta bazlı gruplanmış birleşik tablo
+
+### Ödemeler Sekmesi
+- Ana toplam kartları (toplam, tamamlanan, kalan)
+- Kategori Detayları dropdown butonu — tıklayınca açılır
+  - Kategoriler: Çek, Banka, Muhtelif, Maaş / SGK, İplik Cari, İplik İhtiyaç, Boyahane
+  - Her kategori için toplam / tamamlanan / kalan kartları (küçük punto)
+- Hafta bazlı gruplanmış ödeme tablosu
+- Form: Kategori seçimi dahil
+
+### Siparişler Sekmesi
+- Tablo sütun sırası: HD, Tarih, Müşteri, Fatura No, Sipariş No, Tutar, Vade, İplik, İplik T., Boya, Boya T., Navlun, Durum, Kişi
+- İplik Termin (İplik T.) → İplik sütununun hemen yanında
+- Boya Termin (Boya T.) → Boya sütununun hemen yanında
+- Vade → Tutar sütununun hemen yanında
+- Form: Boyahane + İplik Termin + Boya Termin (3 sütun grid, date input)
+
+### Planlama Sekmesi
+- 2 satır × 4 kart bilgi paneli:
+  - Satır 1: Devir Bakiye, Toplam Giren (Sipariş), Toplam Çıkan (Ödeme), Net Bakiye
+  - Satır 2: Planlanan Ödemeler, Planlanan Siparişler, Denge, Oluşacak Bakiye
+- Oluşacak Bakiye = Net Bakiye + Denge
+- Denge = Planlanan Siparişler - Planlanan Ödemeler
+- Planlama tablosu (sürükle-bırak sıralama)
 
 ### Hafta Bazlı Gruplama
 - Tablolar ISO hafta numarasına göre gruplanır (H9, H10, H11...)
@@ -181,12 +231,33 @@ Dark theme, CSS custom properties:
 
 ## İş Kuralları
 
-1. **Devir Bakiyesi**: 24/03/2026 tarihi itibariyle başlangıç borcu -1.565.867,46 € (Kayteks borçlu)
+1. **Devir Bakiyesi**: BASLANGIC_BAKIYE = -1.565.867,46 € (Kayteks borçlu, 24/03/2026 itibariyle)
 2. **Dinamik Bakiye**: Devir + Siparişler - Ödemeler
 3. **TCMB Kuru**: Tarih girilince otomatik çekilir, manuel düzenlenebilir
 4. **EUR Hesaplama**: TL tutar / kur = EUR karşılığı (ödemelerde)
 5. **Audit Trail**: Her değişiklik audit_log tablosuna kaydedilir
 6. **Kullanıcı Yetki**: İşlem yapmak için giriş yapılmış olmalı
+7. **Oluşacak Bakiye Formülü**: Net Bakiye + (Planlanan Siparişler - Planlanan Ödemeler)
+
+## Production Veri Senkronizasyonu
+
+Local veritabanına production verilerini çekmek için:
+
+```bash
+# Production'dan verileri çek ve local DB'ye yaz
+curl -s https://finans.kayteks.com/api/kenan/siparisler | node -e "
+const http = require('http');
+const data = require('fs').readFileSync('/dev/stdin','utf8');
+const items = JSON.parse(data);
+// Her item için local API'ye POST/PUT
+"
+
+# Veya basitçe: production API'den çek, local API'ye POST et
+# Ödemeler
+curl -s https://finans.kayteks.com/api/kenan/odemeler > /tmp/odemeler.json
+# Siparişler
+curl -s https://finans.kayteks.com/api/kenan/siparisler > /tmp/siparisler.json
+```
 
 ## Geliştirme Kuralları
 
