@@ -217,23 +217,16 @@ export function SiparislerSection({ currentUser }: { currentUser: string }) {
             </div>
           </div>
           {/* İplik Cinsi */}
-          <div className="grid grid-cols-[minmax(0,1fr)_90px_16px_90px_60px_16px_110px] gap-2 items-end">
-            <div>
-              <label className="text-xs text-[--color-text-muted] mb-1 block">İplik Cinsi</label>
-              <input list="iplik-cinsi-list" value={form.iplik_cinsi} onChange={e => setForm(p => ({ ...p, iplik_cinsi: e.target.value }))} placeholder="Seçin veya yazın" className={inputCls} />
-              <datalist id="iplik-cinsi-list">
-                <option value="Pamuk" />
-                <option value="Polyester" />
-                <option value="Viskon" />
-                <option value="Akrilik" />
-                <option value="Modal" />
-                <option value="Tencel" />
-                <option value="Yün" />
-                <option value="Elastan" />
-                <option value="Naylon" />
-                <option value="Karışım" />
-              </datalist>
-            </div>
+          <div>
+            <label className="text-xs text-[--color-text-muted] mb-1 block">İplik Cinsi</label>
+            <input list="iplik-cinsi-list" value={form.iplik_cinsi} onChange={e => setForm(p => ({ ...p, iplik_cinsi: e.target.value }))} placeholder="Seçin veya yazın" className={inputCls} />
+            <datalist id="iplik-cinsi-list">
+              {[...new Set(siparisler.map((s: any) => s.iplik_cinsi).filter(Boolean))].sort().map(c => (
+                <option key={c} value={c} />
+              ))}
+            </datalist>
+          </div>
+          <div className="grid grid-cols-[90px_16px_90px_60px_16px_110px] gap-2 items-end">
             <div>
               <label className="text-xs text-[--color-text-muted] mb-1 block">Miktar</label>
               <input type="number" step="0.01" value={form.iplik_miktar} onChange={e => setForm(p => ({ ...p, iplik_miktar: e.target.value }))} placeholder="0" className={inputCls} />
@@ -320,7 +313,7 @@ export function SiparislerSection({ currentUser }: { currentUser: string }) {
         </div>
 
         {/* Column headers */}
-        <div className="grid grid-cols-[24px_85px_minmax(0,1fr)_90px_90px_110px_40px_75px_70px_75px_70px_75px_55px_45px_48px] border-b border-[--color-graphite] px-1">
+        <div className="grid grid-cols-[24px_85px_minmax(0,1fr)_90px_120px_110px_40px_75px_70px_75px_70px_75px_55px_45px_48px] border-b border-[--color-graphite] px-1">
           <div className="py-2 text-[9px] text-[--color-text-muted] text-center" title="Hesap Dışı">HD</div>
           <div className="px-2 py-2 text-xs text-[--color-text-muted]">Tarih</div>
           <div className="px-2 py-2 text-xs text-[--color-text-muted]">Müşteri</div>
@@ -354,7 +347,7 @@ export function SiparislerSection({ currentUser }: { currentUser: string }) {
               </div>
               {/* Rows */}
               {wg.items.map(s => (
-                <div key={s.id} className={`grid grid-cols-[24px_85px_minmax(0,1fr)_90px_90px_110px_40px_75px_70px_75px_70px_75px_55px_45px_48px] px-1 h-9 overflow-hidden border-b border-[--color-graphite]/50 hover:bg-[--color-steel]/30 ${s.hesap_disi ? 'opacity-40' : ''}`}>
+                <div key={s.id} className={`grid grid-cols-[24px_85px_minmax(0,1fr)_90px_120px_110px_40px_75px_70px_75px_70px_75px_55px_45px_48px] px-1 h-9 overflow-hidden border-b border-[--color-graphite]/50 hover:bg-[--color-steel]/30 ${s.hesap_disi ? 'opacity-40' : ''}`}>
                   <div className="flex items-center justify-center">
                     <button onClick={async () => {
                       if (!currentUser) return
