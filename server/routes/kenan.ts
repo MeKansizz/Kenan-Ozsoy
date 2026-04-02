@@ -466,8 +466,8 @@ router.post('/planlama/sort-by-date', (_req, res) => {
     })
   })()
 
-  // Marker'ları da en sona at
-  const markers = db.prepare('SELECT id FROM kenan_plan_markers ORDER BY sira ASC').all() as any[]
+  // Marker'ları mevcut pozisyonlarına göre yeniden numarala (aralara sığsın)
+  const markers = db.prepare('SELECT id, sira FROM kenan_plan_markers ORDER BY sira ASC').all() as any[]
   const stmtMarker = db.prepare('UPDATE kenan_plan_markers SET sira = ? WHERE id = ?')
   db.transaction(() => {
     markers.forEach((m, i) => stmtMarker.run(all.length + i + 1, m.id))
@@ -544,7 +544,11 @@ router.post('/planlama/markers', (req, res) => {
   const db = getDb()
   const { sira, label } = req.body
   const id = randomUUID()
-  const finalSira = sira ?? (db.prepare('SELECT COALESCE(MAX(sira), 0) + 1 as next FROM kenan_plan_markers').get() as any).next
+  // En başa ekle: en küçük sira'dan 1 çıkar
+  const minOdeme = (db.prepare('SELECT COALESCE(MIN(plan_sira), 1) as m FROM kenan_odemeler WHERE planlamada = 1').get() as any).m
+  const minPlan = (db.prepare('SELECT COALESCE(MIN(sira), 1) as m FROM kenan_planlama').get() as any).m
+  const minMarker = (db.prepare('SELECT COALESCE(MIN(sira), 1) as m FROM kenan_plan_markers').get() as any).m
+  const finalSira = sira ?? (Math.min(minOdeme, minPlan, minMarker) - 1)
   db.prepare('INSERT INTO kenan_plan_markers (id, sira, label) VALUES (?, ?, ?)').run(id, finalSira, label || '')
   res.json({ id, sira: finalSira })
 })
