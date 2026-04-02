@@ -155,8 +155,7 @@ export function OdemePlanlamaSection({ currentUser }: { currentUser: string }) {
 
   const handleAddMarker = async () => {
     if (!currentUser) return
-    const lastSira = solItems.length > 0 ? solItems[solItems.length - 1].sira + 1 : 1
-    try { await api.kenanCreatePlanMarker(lastSira); loadAll() } catch {}
+    try { await api.kenanCreatePlanMarker(); loadAll() } catch {}
   }
 
   const handleRemoveMarker = async (markerId: string) => {
