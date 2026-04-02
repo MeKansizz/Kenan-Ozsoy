@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, Fragment } from 'react'
 import { api } from '@/lib/api'
-import { Plus, Trash2, Edit3, X, Search, CalendarCheck } from 'lucide-react'
+import { Plus, Trash2, Edit3, X, Search, CalendarCheck, ChevronDown, ChevronUp } from 'lucide-react'
 import { Modal } from '@/components/Modal'
 import {
   DURUM_OPTIONS, DURUM_LABELS, inputCls,
@@ -14,6 +14,7 @@ export function OdemelerSection({ currentUser }: { currentUser: string }) {
   const [showForm, setShowForm] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [search, setSearch] = useState('')
+  const [showKategori, setShowKategori] = useState(false)
   const { fetchKur } = useKur()
 
   const [form, setForm] = useState({
@@ -59,6 +60,17 @@ export function OdemelerSection({ currentUser }: { currentUser: string }) {
     const toplam = aktif.reduce((s, o) => s + o.tutar_eur, 0)
     const tamamlanan = aktif.filter(o => o.durum === 'tamamlandi').reduce((s, o) => s + o.tutar_eur, 0)
     return { toplam, tamamlanan, kalan: toplam - tamamlanan }
+  }, [odemeler])
+
+  const kategoriler = ['Çek', 'Banka', 'Muhtelif', 'Maaş / SGK', 'İplik Cari', 'İplik İhtiyaç', 'Boyahane'] as const
+  const kategoriSummary = useMemo(() => {
+    const aktif = odemeler.filter(o => !o.hesap_disi)
+    return kategoriler.map(k => {
+      const items = aktif.filter(o => (o as any).kategori === k)
+      const toplam = items.reduce((s, o) => s + o.tutar_eur, 0)
+      const tamamlanan = items.filter(o => o.durum === 'tamamlandi').reduce((s, o) => s + o.tutar_eur, 0)
+      return { kategori: k, toplam, tamamlanan, kalan: toplam - tamamlanan }
+    }).filter(k => k.toplam > 0)
   }, [odemeler])
 
   const filtered = useMemo(() => {
@@ -112,7 +124,7 @@ export function OdemelerSection({ currentUser }: { currentUser: string }) {
 
   return (
     <div className="space-y-4">
-      {/* Summary */}
+      {/* Genel Summary */}
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-[--color-slate] border border-[--color-graphite] rounded-xl p-4">
           <div className="text-xs text-[--color-text-muted] mb-1">Ödeme Toplamı</div>
@@ -127,6 +139,37 @@ export function OdemelerSection({ currentUser }: { currentUser: string }) {
           <div className="text-lg font-bold text-amber-400 font-mono">{maskedEur(summary.kalan, loggedIn)}</div>
         </div>
       </div>
+
+      {/* Kategori Özet Dropdown */}
+      {kategoriSummary.length > 0 && (
+        <div>
+          <button onClick={() => setShowKategori(!showKategori)}
+            className="flex items-center gap-1.5 text-xs text-[--color-text-muted] hover:text-[--color-text-primary] transition-colors">
+            {showKategori ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            Kategori Detayları
+          </button>
+          {showKategori && (
+            <div className="space-y-1.5 mt-2">
+              {kategoriSummary.map(k => (
+                <div key={k.kategori} className="grid grid-cols-3 gap-3">
+                  <div className="bg-[--color-slate] border border-[--color-graphite] rounded-lg px-3 py-2">
+                    <div className="text-[10px] text-[--color-text-muted]">{k.kategori} Toplam</div>
+                    <div className="text-sm font-bold text-copper font-mono">{maskedEur(k.toplam, loggedIn)}</div>
+                  </div>
+                  <div className="bg-[--color-slate] border border-[--color-graphite] rounded-lg px-3 py-2">
+                    <div className="text-[10px] text-[--color-text-muted]">{k.kategori} Tamamlanan</div>
+                    <div className="text-sm font-bold text-emerald-400 font-mono">{maskedEur(k.tamamlanan, loggedIn)}</div>
+                  </div>
+                  <div className="bg-[--color-slate] border border-[--color-graphite] rounded-lg px-3 py-2">
+                    <div className="text-[10px] text-[--color-text-muted]">{k.kategori} Kalan</div>
+                    <div className="text-sm font-bold text-amber-400 font-mono">{maskedEur(k.kalan, loggedIn)}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Modal */}
       <Modal open={showForm} onClose={resetForm} title={editId ? 'Ödeme Düzenle' : 'Yeni Ödeme Ekle'} color="copper">
@@ -178,6 +221,7 @@ export function OdemelerSection({ currentUser }: { currentUser: string }) {
                 <option value="Muhtelif">Muhtelif</option>
                 <option value="Maaş / SGK">Maaş / SGK</option>
                 <option value="İplik Cari">İplik Cari</option>
+                <option value="İplik İhtiyaç">İplik İhtiyaç</option>
                 <option value="Boyahane">Boyahane</option>
               </select>
             </div>

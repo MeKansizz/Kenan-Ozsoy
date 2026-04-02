@@ -151,4 +151,10 @@ export function initSchema() {
   if (!sipCols.find((c: any) => c.name === 'boyahane')) {
     db.exec("ALTER TABLE kenan_siparisler ADD COLUMN boyahane TEXT DEFAULT ''")
   }
+  if (!sipCols.find((c: any) => c.name === 'iplik_termin')) {
+    db.exec("ALTER TABLE kenan_siparisler ADD COLUMN iplik_termin TEXT DEFAULT ''")
+  }
+  if (!sipCols.find((c: any) => c.name === 'boya_termin')) {
+    db.exec("ALTER TABLE kenan_siparisler ADD COLUMN boya_termin TEXT DEFAULT ''")
+  }
 }

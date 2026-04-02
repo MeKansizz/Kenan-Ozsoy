@@ -9,7 +9,6 @@ import { DURUM_LABELS, BASLANGIC_BAKIYE, formatKur, formatDate, maskedEur } from
 // ==================== LOGIN PANEL ====================
 function LoginPanel({ currentUser, currentRole, onUserChange }: { currentUser: string; currentRole: string; onUserChange: (u: string, role: string) => void }) {
   const [users, setUsers] = useState<any[]>([])
-  const [loginLog, setLoginLog] = useState<any[]>([])
   const [mode, setMode] = useState<'idle' | 'login' | 'register' | 'changepass' | 'setpass'>('idle')
   const isAdmin = currentRole === 'admin'
   const [loginName, setLoginName] = useState('')
@@ -25,9 +24,8 @@ function LoginPanel({ currentUser, currentRole, onUserChange }: { currentUser: s
   const [error, setError] = useState('')
 
   const load = async () => {
-    const [u, l] = await Promise.all([api.kenanGetUsers(), api.kenanGetLoginLog()])
+    const u = await api.kenanGetUsers()
     setUsers(u)
-    setLoginLog(l)
   }
 
   useEffect(() => { load() }, [])
@@ -108,31 +106,7 @@ function LoginPanel({ currentUser, currentRole, onUserChange }: { currentUser: s
   const smallInput = "px-2 py-1.5 rounded-lg bg-[--color-steel] border border-[--color-graphite] text-sm text-[--color-text-primary] focus:outline-none focus:border-copper"
 
   return (
-    <div className="flex items-start gap-4">
-      {/* Last 5 logins */}
-      <div className="bg-[--color-slate] border border-[--color-graphite] rounded-xl p-3 min-w-[280px]">
-        <div className="flex items-center gap-2 text-xs text-[--color-text-muted] mb-2">
-          <Clock size={12} /> Son Girişler
-        </div>
-        {loginLog.length === 0 ? (
-          <div className="text-xs text-[--color-text-muted]">Henüz giriş yok</div>
-        ) : (
-          <div className="space-y-1">
-            {loginLog.map((l: any, i: number) => (
-              <div key={l.id} className="flex items-center justify-between text-xs">
-                <span className={`font-medium ${i === 0 ? 'text-emerald-400' : 'text-[--color-text-secondary]'}`}>
-                  {i === 0 && <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5" />}
-                  {l.user_name}
-                </span>
-                <span className="text-[--color-text-muted] font-mono text-[10px]">
-                  {new Date(l.login_at + 'Z').toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
+    <>
       {/* Auth area */}
       <div className="flex flex-col gap-2">
         {currentUser ? (
@@ -243,6 +217,43 @@ function LoginPanel({ currentUser, currentRole, onUserChange }: { currentUser: s
           </div>
         )}
       </div>
+    </>
+  )
+}
+
+function LoginLogPanel() {
+  const [loginLog, setLoginLog] = useState<any[]>([])
+  const [open, setOpen] = useState(false)
+  useEffect(() => { api.kenanGetLoginLog().then(setLoginLog) }, [])
+  return (
+    <div className="relative">
+      <button onClick={() => setOpen(!open)}
+        className="flex items-center gap-1.5 text-[10px] text-[--color-text-muted] font-mono bg-[--color-slate] border border-[--color-graphite] rounded-lg px-3 py-2 hover:border-[--color-text-muted] transition-colors">
+        <Clock size={10} />
+        <span>Son Girişler</span>
+        {loginLog.length > 0 && <span className="text-emerald-400 font-medium">{loginLog[0]?.user_name}</span>}
+      </button>
+      {open && (
+        <div className="absolute top-full right-0 mt-1 z-50 bg-[--color-slate] border border-[--color-graphite] rounded-xl p-3 min-w-[220px] shadow-xl">
+          {loginLog.length === 0 ? (
+            <div className="text-xs text-[--color-text-muted]">Henüz giriş yok</div>
+          ) : (
+            <div className="space-y-1">
+              {loginLog.map((l: any, i: number) => (
+                <div key={l.id} className="flex items-center justify-between text-xs gap-4">
+                  <span className={`font-medium ${i === 0 ? 'text-emerald-400' : 'text-[--color-text-secondary]'}`}>
+                    {i === 0 && <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 mr-1.5" />}
+                    {l.user_name}
+                  </span>
+                  <span className="text-[--color-text-muted] font-mono text-[10px]">
+                    {new Date(l.login_at + 'Z').toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -408,19 +419,21 @@ export function KenanOzsoyPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold text-[--color-text-primary] font-display">Kayteks - Kenan Özsoy</h1>
           <p className="text-sm text-[--color-text-muted] mt-1">Cari hesap ve nakit akış takibi</p>
         </div>
-        <div className="text-right text-[10px] text-[--color-text-muted] font-mono bg-[--color-slate] border border-[--color-graphite] rounded-lg px-3 py-2">
-          <div>Deploy: {new Date((window as any).__BUILD_TIME__ || __BUILD_TIME__).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
-          <div className="text-copper">#{__COMMIT_HASH__}</div>
+        <div className="flex items-center gap-2">
+          <LoginPanel currentUser={currentUser} currentRole={currentRole} onUserChange={handleUserChange} />
+          <LoginLogPanel />
+          <div className="text-right text-[10px] text-[--color-text-muted] font-mono bg-[--color-slate] border border-[--color-graphite] rounded-lg px-3 py-2 shrink-0">
+            <div>Deploy: {new Date((window as any).__BUILD_TIME__ || __BUILD_TIME__).toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</div>
+            <div className="text-copper">#{__COMMIT_HASH__}</div>
+          </div>
         </div>
       </div>
-
-      <LoginPanel currentUser={currentUser} currentRole={currentRole} onUserChange={handleUserChange} />
 
       <div className="flex gap-1 bg-[--color-steel] rounded-lg p-1 w-fit">
         <button onClick={() => setTab('cari')}

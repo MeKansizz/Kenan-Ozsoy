@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { X, GripVertical, Plus, CalendarX2 } from 'lucide-react'
+import { X, GripVertical, Plus, CalendarX2, ArrowDownCircle, ArrowUpCircle } from 'lucide-react'
 import { api } from '../lib/api'
 
 function formatDate(dateStr: string): string {
@@ -43,6 +43,12 @@ function extractDropData(e: React.DragEvent): DropData | null {
   return { plan_id: planId || undefined, odeme_id: odemeId || undefined, marker_id: markerId || undefined }
 }
 
+const BASLANGIC_BAKIYE = -1565867.46
+
+interface CariEntry {
+  giren_eur: number; cikan_eur: number; durum: string;
+}
+
 export function OdemePlanlamaSection({ currentUser }: { currentUser: string }) {
   const loggedIn = !!currentUser
   const [odemeler, setOdemeler] = useState<Odeme[]>([])
@@ -50,17 +56,20 @@ export function OdemePlanlamaSection({ currentUser }: { currentUser: string }) {
   const [markers, setMarkers] = useState<Marker[]>([])
   const [isDragging, setIsDragging] = useState(false)
   const [dropTarget, setDropTarget] = useState<{ idx: number; pos: 'before' | 'after' } | null>(null)
+  const [cariEntries, setCariEntries] = useState<CariEntry[]>([])
 
   const loadAll = useCallback(async () => {
     try {
-      const [o, p, m] = await Promise.all([
+      const [o, p, m, c] = await Promise.all([
         api.kenanGetOdemeler(),
         api.kenanGetPlanlama(),
         api.kenanGetPlanMarkers(),
+        api.kenanGetCari({}),
       ])
       setOdemeler(o)
       setPlanItems(p)
       setMarkers(m)
+      setCariEntries(c)
     } catch (e) {
       console.error('Veri yüklenemedi:', e)
     }
@@ -80,9 +89,20 @@ export function OdemePlanlamaSection({ currentUser }: { currentUser: string }) {
     return items
   }, [odemeler, planItems, markers])
 
+  // Cari toplamlar
+  const cariSummary = useMemo(() => {
+    const tamamlananlar = cariEntries.filter(e => e.durum === 'tamamlandi')
+    const toplam_giren = tamamlananlar.reduce((s, e) => s + (e.giren_eur || 0), 0)
+    const toplam_cikan = tamamlananlar.reduce((s, e) => s + (e.cikan_eur || 0), 0)
+    const net = BASLANGIC_BAKIYE + toplam_giren - toplam_cikan
+    return { toplam_giren, toplam_cikan, net }
+  }, [cariEntries])
+
   // Toplamlar
   const odemeTotal = useMemo(() => odemeler.filter(o => o.planlamada && !o.hesap_disi).reduce((s, o) => s + o.tutar_eur, 0), [odemeler])
   const planTotal = useMemo(() => planItems.reduce((s, p) => s + (p.tutar_eur || p.tutar), 0), [planItems])
+  const denge = planTotal - odemeTotal
+  const olusacakBakiye = cariSummary.net + denge
 
   // Drag handlers
   const handleDragStartPlan = (e: React.DragEvent, planId: string) => {
@@ -171,8 +191,30 @@ export function OdemePlanlamaSection({ currentUser }: { currentUser: string }) {
 
   return (
     <div className="space-y-4">
-      {/* Özet kartları */}
-      <div className="grid grid-cols-3 gap-3">
+      {/* Cari Hesap Bilgileri */}
+      <div className="grid grid-cols-4 gap-3">
+        <div className="bg-[--color-slate] border border-[--color-graphite] rounded-xl px-4 py-3">
+          <div className="text-xs text-[--color-text-muted] mb-1">Devir Bakiye (2025)</div>
+          <div className="text-lg font-bold text-red-400 font-mono">{maskedEur(Math.abs(BASLANGIC_BAKIYE), loggedIn)}</div>
+          <div className="text-xs text-red-400/70 mt-1">Kayteks borçlu</div>
+        </div>
+        <div className="bg-[--color-slate] border border-[--color-graphite] rounded-xl px-4 py-3">
+          <div className="flex items-center gap-2 text-xs text-[--color-text-muted] mb-1"><ArrowDownCircle size={14} className="text-emerald-400" /> Toplam Giren (Sipariş)</div>
+          <div className="text-lg font-bold text-emerald-400 font-mono">{maskedEur(cariSummary.toplam_giren, loggedIn)}</div>
+        </div>
+        <div className="bg-[--color-slate] border border-[--color-graphite] rounded-xl px-4 py-3">
+          <div className="flex items-center gap-2 text-xs text-[--color-text-muted] mb-1"><ArrowUpCircle size={14} className="text-copper" /> Toplam Çıkan (Ödeme)</div>
+          <div className="text-lg font-bold text-copper font-mono">{maskedEur(cariSummary.toplam_cikan, loggedIn)}</div>
+        </div>
+        <div className="bg-[--color-slate] border border-[--color-graphite] rounded-xl px-4 py-3">
+          <div className="text-xs text-[--color-text-muted] mb-1">Net Bakiye</div>
+          <div className={`text-lg font-bold font-mono ${cariSummary.net >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{maskedEur(Math.abs(cariSummary.net), loggedIn)}</div>
+          <div className={`text-xs mt-1 ${cariSummary.net >= 0 ? 'text-emerald-400/70' : 'text-red-400/70'}`}>{cariSummary.net < 0 ? 'Kayteks borçlu' : 'Kenan borçlu'}</div>
+        </div>
+      </div>
+
+      {/* Planlama Özet */}
+      <div className="grid grid-cols-4 gap-3">
         <div className="bg-[--color-slate] border border-[--color-graphite] rounded-xl px-4 py-3">
           <div className="text-xs text-[--color-text-muted]">Planlanan Ödemeler</div>
           <div className="text-lg font-bold text-copper font-mono">{maskedEur(odemeTotal, loggedIn)}</div>
@@ -185,9 +227,16 @@ export function OdemePlanlamaSection({ currentUser }: { currentUser: string }) {
         </div>
         <div className="bg-[--color-slate] border border-[--color-graphite] rounded-xl px-4 py-3">
           <div className="text-xs text-[--color-text-muted]">Denge (Sipariş - Ödeme)</div>
-          <div className={`text-lg font-bold font-mono ${planTotal - odemeTotal >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-            {maskedEur(planTotal - odemeTotal, loggedIn)}
+          <div className={`text-lg font-bold font-mono ${denge >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            {maskedEur(denge, loggedIn)}
           </div>
+        </div>
+        <div className="bg-[--color-slate] border border-[--color-graphite] rounded-xl px-4 py-3">
+          <div className="text-xs text-[--color-text-muted]">Oluşacak Bakiye</div>
+          <div className={`text-lg font-bold font-mono ${olusacakBakiye >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+            {maskedEur(Math.abs(olusacakBakiye), loggedIn)}
+          </div>
+          <div className={`text-[10px] mt-1 ${olusacakBakiye >= 0 ? 'text-emerald-400/70' : 'text-red-400/70'}`}>{olusacakBakiye < 0 ? 'Kayteks borçlu' : 'Kenan borçlu'}</div>
         </div>
       </div>
 
