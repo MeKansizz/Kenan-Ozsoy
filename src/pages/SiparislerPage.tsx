@@ -24,7 +24,7 @@ function calcIplikEur(entry: IplikEntry, rates: { eur: number; usd: number } | n
   return raw
 }
 
-const GRID_COLS = '24px_minmax(0,1fr)_90px_120px_85px_110px_40px_75px_70px_75px_70px_75px_55px_45px_48px'
+const GRID_CLS = 'grid grid-cols-[24px_minmax(0,1fr)_90px_120px_85px_110px_40px_75px_70px_75px_70px_75px_55px_45px_48px]'
 
 export function SiparislerSection({ currentUser }: { currentUser: string }) {
   const loggedIn = !!currentUser
@@ -398,7 +398,7 @@ export function SiparislerSection({ currentUser }: { currentUser: string }) {
         </div>
 
         {/* Column headers — Müşteri, Fatura No, Sipariş No yan yana */}
-        <div className={`grid grid-cols-[${GRID_COLS}] border-b border-[--color-graphite] px-1`}>
+        <div className={`${GRID_CLS} border-b border-[--color-graphite] px-1`}>
           <div className="py-2 text-[9px] text-[--color-text-muted] text-center" title="Hesap Dışı">HD</div>
           <div className="px-2 py-2 text-xs text-[--color-text-muted]">Müşteri</div>
           <div className="px-2 py-2 text-xs text-[--color-text-muted]">Fatura No</div>
@@ -432,7 +432,7 @@ export function SiparislerSection({ currentUser }: { currentUser: string }) {
               </div>
               {/* Rows */}
               {wg.items.map(s => (
-                <div key={s.id} className={`grid grid-cols-[${GRID_COLS}] px-1 h-9 overflow-hidden border-b border-[--color-graphite]/50 hover:bg-[--color-steel]/30 ${s.hesap_disi ? 'opacity-40' : ''}`}>
+                <div key={s.id} className={`${GRID_CLS} px-1 h-9 overflow-hidden border-b border-[--color-graphite]/50 hover:bg-[--color-steel]/30 ${s.hesap_disi ? 'opacity-40' : ''}`}>
                   <div className="flex items-center justify-center">
                     <button onClick={async () => {
                       if (!currentUser) return
