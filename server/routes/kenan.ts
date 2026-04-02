@@ -447,6 +447,35 @@ router.put('/odemeler/:id/plan-sira', (req, res) => {
   res.json({ success: true })
 })
 
+// Tüm planlama öğelerini tarihe göre yeniden sırala (ödeme + sipariş karışık)
+router.post('/planlama/sort-by-date', (_req, res) => {
+  const db = getDb()
+  const odemeler = db.prepare("SELECT id, tarih, 'odeme' as tip FROM kenan_odemeler WHERE planlamada = 1 AND (hesap_disi IS NULL OR hesap_disi = 0)").all() as any[]
+  const planlar = db.prepare("SELECT p.id, s.tarih, 'siparis' as tip FROM kenan_planlama p JOIN kenan_siparisler s ON p.siparis_id = s.id").all() as any[]
+
+  const all = [...odemeler, ...planlar].sort((a, b) => (a.tarih || '').localeCompare(b.tarih || ''))
+
+  const stmtOdeme = db.prepare('UPDATE kenan_odemeler SET plan_sira = ? WHERE id = ?')
+  const stmtPlan = db.prepare('UPDATE kenan_planlama SET sira = ? WHERE id = ?')
+
+  db.transaction(() => {
+    all.forEach((item, i) => {
+      const sira = i + 1
+      if (item.tip === 'odeme') stmtOdeme.run(sira, item.id)
+      else stmtPlan.run(sira, item.id)
+    })
+  })()
+
+  // Marker'ları da en sona at
+  const markers = db.prepare('SELECT id FROM kenan_plan_markers ORDER BY sira ASC').all() as any[]
+  const stmtMarker = db.prepare('UPDATE kenan_plan_markers SET sira = ? WHERE id = ?')
+  db.transaction(() => {
+    markers.forEach((m, i) => stmtMarker.run(all.length + i + 1, m.id))
+  })()
+
+  res.json({ sorted: all.length, markers: markers.length })
+})
+
 router.post('/planlama/init-sira', (_req, res) => {
   const db = getDb()
   const rows = db.prepare('SELECT id FROM kenan_odemeler WHERE plan_sira IS NULL AND (hesap_disi IS NULL OR hesap_disi = 0) ORDER BY tarih ASC').all() as any[]
