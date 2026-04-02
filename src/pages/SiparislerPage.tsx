@@ -8,6 +8,24 @@ import {
   getWeekNumber, getWeekDateRange, groupByWeek, useKur
 } from '@/lib/kenan-utils'
 
+interface IplikEntry {
+  cinsi: string
+  miktar: string
+  birim_fiyat: string
+  doviz: string
+}
+
+function calcIplikEur(entry: IplikEntry, rates: { eur: number; usd: number } | null): number {
+  const raw = (parseFloat(entry.miktar) || 0) * (parseFloat(entry.birim_fiyat) || 0)
+  if (raw === 0) return 0
+  if (entry.doviz === 'EUR') return raw
+  if (entry.doviz === 'USD' && rates) return Math.round(raw * (rates.usd / rates.eur) * 100) / 100
+  if (entry.doviz === 'TL' && rates) return Math.round((raw / rates.eur) * 100) / 100
+  return raw
+}
+
+const GRID_COLS = '24px_minmax(0,1fr)_90px_120px_85px_110px_40px_75px_70px_75px_70px_75px_55px_45px_48px'
+
 export function SiparislerSection({ currentUser }: { currentUser: string }) {
   const loggedIn = !!currentUser
   const [siparisler, setSiparisler] = useState<Siparis[]>([])
@@ -21,9 +39,22 @@ export function SiparislerSection({ currentUser }: { currentUser: string }) {
   const [form, setForm] = useState({
     tarih: new Date().toISOString().slice(0, 10), fatura_no: '', musteri: '', siparis_no: '', tutar: '', kur: '', doviz: 'EUR', vade_gun: '', durum: 'beklemede', notlar: '',
     maliyet_iplik: '', maliyet_boya: '', maliyet_navlun: '',
-    iplik_cinsi: '', iplik_miktar: '', iplik_birim_fiyat: '', iplik_birim_doviz: 'EUR',
     boyahane: '', iplik_termin: '', boya_termin: ''
   })
+
+  const [iplikler, setIplikler] = useState<IplikEntry[]>([])
+
+  // Dinamik iplik cinsi listesi — mevcut siparişlerden + form'daki girişlerden
+  const iplikCinsleri = useMemo(() => {
+    const fromDb = siparisler.map((s: any) => s.iplik_cinsi).filter(Boolean)
+    const fromEntries = siparisler.flatMap((s: any) => {
+      try { return JSON.parse(s.iplik_entries || '[]').map((e: any) => e.cinsi) } catch { return [] }
+    }).filter(Boolean)
+    const fromForm = iplikler.map(e => e.cinsi).filter(Boolean)
+    return [...new Set([...fromDb, ...fromEntries, ...fromForm])].sort()
+  }, [siparisler, iplikler])
+
+  const iplikToplam = useMemo(() => iplikler.reduce((sum, e) => sum + calcIplikEur(e, rates), 0), [iplikler, rates])
 
   const load = async () => {
     const [s, p] = await Promise.all([api.kenanGetSiparisler(), api.kenanGetPlanlama()])
@@ -63,8 +94,22 @@ export function SiparislerSection({ currentUser }: { currentUser: string }) {
 
   const weeks = useMemo(() => groupByWeek(filtered), [filtered])
 
+  // Siparişteki iplik entries'den toplam EUR hesapla (tablo için)
+  const getIplikTotal = (s: any): number => {
+    let entries: IplikEntry[] = []
+    try { entries = JSON.parse(s.iplik_entries || '[]') } catch { /* */ }
+    if (entries.length > 0) {
+      return entries.reduce((sum, e) => sum + calcIplikEur(e, rates), 0)
+    }
+    // Fallback: eski tek satır verisi
+    const raw = (s.iplik_miktar || 0) * (s.iplik_birim_fiyat || 0)
+    if (raw > 0) return calcIplikEur({ cinsi: '', miktar: String(s.iplik_miktar), birim_fiyat: String(s.iplik_birim_fiyat), doviz: s.iplik_birim_doviz || 'EUR' }, rates)
+    return s.maliyet_iplik || 0
+  }
+
   const resetForm = () => {
-    setForm({ tarih: new Date().toISOString().slice(0, 10), fatura_no: '', musteri: '', siparis_no: '', tutar: '', kur: '', doviz: 'EUR', vade_gun: '', durum: 'beklemede', notlar: '', maliyet_iplik: '', maliyet_boya: '', maliyet_navlun: '', iplik_cinsi: '', iplik_miktar: '', iplik_birim_fiyat: '', iplik_birim_doviz: 'EUR', boyahane: '', iplik_termin: '', boya_termin: '' })
+    setForm({ tarih: new Date().toISOString().slice(0, 10), fatura_no: '', musteri: '', siparis_no: '', tutar: '', kur: '', doviz: 'EUR', vade_gun: '', durum: 'beklemede', notlar: '', maliyet_iplik: '', maliyet_boya: '', maliyet_navlun: '', boyahane: '', iplik_termin: '', boya_termin: '' })
+    setIplikler([])
     setEditId(null)
     setShowForm(false)
   }
@@ -75,13 +120,14 @@ export function SiparislerSection({ currentUser }: { currentUser: string }) {
       tutar: parseFloat(form.tutar) || 0,
       kur: parseFloat(form.kur) || null,
       vade_gun: parseInt(form.vade_gun) || null,
-      maliyet_iplik: parseFloat(form.maliyet_iplik) || 0,
+      maliyet_iplik: iplikler.length > 0 ? iplikToplam : (parseFloat(form.maliyet_iplik) || 0),
       maliyet_boya: parseFloat(form.maliyet_boya) || 0,
       maliyet_navlun: parseFloat(form.maliyet_navlun) || 0,
-      iplik_cinsi: form.iplik_cinsi || '',
-      iplik_miktar: parseFloat(form.iplik_miktar) || 0,
-      iplik_birim_fiyat: parseFloat(form.iplik_birim_fiyat) || 0,
-      iplik_birim_doviz: form.iplik_birim_doviz || 'EUR',
+      iplik_cinsi: iplikler.length > 0 ? iplikler.map(e => e.cinsi).filter(Boolean).join(', ') : '',
+      iplik_miktar: 0,
+      iplik_birim_fiyat: 0,
+      iplik_birim_doviz: 'EUR',
+      iplik_entries: iplikler.filter(e => parseFloat(e.miktar) > 0 || e.cinsi),
       boyahane: form.boyahane || '',
       iplik_termin: form.iplik_termin || '',
       boya_termin: form.boya_termin || '',
@@ -95,6 +141,21 @@ export function SiparislerSection({ currentUser }: { currentUser: string }) {
 
   const startEdit = async (s: Siparis) => {
     if (s.tarih) fetchSiparisKur(s.tarih)
+
+    // iplik_entries parse
+    let entries: IplikEntry[] = []
+    try { entries = JSON.parse((s as any).iplik_entries || '[]') } catch { /* */ }
+    // Eski tek satır verisi varsa ve entries boşsa, migrate et
+    if (entries.length === 0 && ((s as any).iplik_miktar > 0 || (s as any).iplik_cinsi)) {
+      entries = [{
+        cinsi: (s as any).iplik_cinsi || '',
+        miktar: (s as any).iplik_miktar ? String((s as any).iplik_miktar) : '',
+        birim_fiyat: (s as any).iplik_birim_fiyat ? String((s as any).iplik_birim_fiyat) : '',
+        doviz: (s as any).iplik_birim_doviz || 'EUR'
+      }]
+    }
+    setIplikler(entries)
+
     setForm({
       tarih: s.tarih, fatura_no: s.fatura_no || '', musteri: s.musteri, siparis_no: s.siparis_no || '',
       tutar: String(s.tutar), kur: s.kur ? String(s.kur) : '', doviz: s.doviz || 'EUR',
@@ -102,16 +163,18 @@ export function SiparislerSection({ currentUser }: { currentUser: string }) {
       maliyet_iplik: (s as any).maliyet_iplik ? String((s as any).maliyet_iplik) : (s.tutar > 0 ? String(Math.round(s.tutar * 0.4 * 100) / 100) : ''),
       maliyet_boya: (s as any).maliyet_boya ? String((s as any).maliyet_boya) : (s.tutar > 0 ? String(Math.round(s.tutar * 0.2 * 100) / 100) : ''),
       maliyet_navlun: (s as any).maliyet_navlun ? String((s as any).maliyet_navlun) : '',
-      iplik_cinsi: (s as any).iplik_cinsi || '',
-      iplik_miktar: (s as any).iplik_miktar ? String((s as any).iplik_miktar) : '',
-      iplik_birim_fiyat: (s as any).iplik_birim_fiyat ? String((s as any).iplik_birim_fiyat) : '',
-      iplik_birim_doviz: (s as any).iplik_birim_doviz || 'EUR',
       boyahane: (s as any).boyahane || '',
       iplik_termin: (s as any).iplik_termin || '',
       boya_termin: (s as any).boya_termin || '',
     })
     setEditId(s.id)
     setShowForm(true)
+  }
+
+  const addIplik = () => setIplikler(p => [...p, { cinsi: '', miktar: '', birim_fiyat: '', doviz: 'EUR' }])
+  const removeIplik = (i: number) => setIplikler(p => p.filter((_, idx) => idx !== i))
+  const updateIplik = (i: number, field: keyof IplikEntry, val: string) => {
+    setIplikler(p => p.map((e, idx) => idx === i ? { ...e, [field]: val } : e))
   }
 
   return (
@@ -133,9 +196,9 @@ export function SiparislerSection({ currentUser }: { currentUser: string }) {
       </div>
 
       {/* Modal */}
-      <Modal open={showForm} onClose={resetForm} title={editId ? 'Sipariş Düzenle' : 'Yeni Sipariş Ekle'} color="info">
+      <Modal open={showForm} onClose={resetForm} title={editId ? 'Sipariş Düzenle' : 'Yeni Sipariş Ekle'} color="info" wide>
         <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="text-xs text-[--color-text-muted] mb-1 block">Tarih</label>
               <input type="date" value={form.tarih} onChange={e => { setForm(p => ({ ...p, tarih: e.target.value })); fetchSiparisKur(e.target.value) }} className={inputCls} />
@@ -145,8 +208,14 @@ export function SiparislerSection({ currentUser }: { currentUser: string }) {
               <label className="text-xs text-[--color-text-muted] mb-1 block">Müşteri</label>
               <input value={form.musteri} onChange={e => setForm(p => ({ ...p, musteri: e.target.value }))} placeholder="Müşteri adı" className={inputCls} />
             </div>
+            <div>
+              <label className="text-xs text-[--color-text-muted] mb-1 block">Döviz</label>
+              <select value={form.doviz} onChange={e => { setForm(p => ({ ...p, doviz: e.target.value })); fetchSiparisKur(form.tarih) }} className={inputCls}>
+                <option value="EUR">EUR</option><option value="USD">USD</option>
+              </select>
+            </div>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-4 gap-3">
             <div>
               <label className="text-xs text-[--color-text-muted] mb-1 block">Fatura No</label>
               <input value={form.fatura_no} onChange={e => setForm(p => ({ ...p, fatura_no: e.target.value }))} className={inputCls} />
@@ -155,14 +224,6 @@ export function SiparislerSection({ currentUser }: { currentUser: string }) {
               <label className="text-xs text-[--color-text-muted] mb-1 block">Sipariş No</label>
               <input value={form.siparis_no} onChange={e => setForm(p => ({ ...p, siparis_no: e.target.value }))} className={inputCls} />
             </div>
-            <div>
-              <label className="text-xs text-[--color-text-muted] mb-1 block">Döviz</label>
-              <select value={form.doviz} onChange={e => { setForm(p => ({ ...p, doviz: e.target.value })); fetchSiparisKur(form.tarih) }} className={inputCls}>
-                <option value="EUR">EUR</option><option value="USD">USD</option>
-              </select>
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="text-xs text-[--color-text-muted] mb-1 block">Tutar ({form.doviz})</label>
               <input type="number" step="0.01" value={form.tutar} onChange={e => {
@@ -175,12 +236,12 @@ export function SiparislerSection({ currentUser }: { currentUser: string }) {
               <label className="text-xs text-[--color-text-muted] mb-1 block">Kur <span className="text-copper">TCMB</span></label>
               <input type="number" step="0.0001" value={form.kur} onChange={e => setForm(p => ({ ...p, kur: e.target.value }))} placeholder="Otomatik" className={inputCls} />
             </div>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="text-xs text-[--color-text-muted] mb-1 block">Vade (gün)</label>
               <input type="number" value={form.vade_gun} onChange={e => setForm(p => ({ ...p, vade_gun: e.target.value }))} className={inputCls} />
             </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs text-[--color-text-muted] mb-1 block">Durum</label>
               <select value={form.durum} onChange={e => setForm(p => ({ ...p, durum: e.target.value }))} className={inputCls}>
@@ -192,13 +253,16 @@ export function SiparislerSection({ currentUser }: { currentUser: string }) {
               <input value={form.notlar} onChange={e => setForm(p => ({ ...p, notlar: e.target.value }))} className={inputCls} />
             </div>
           </div>
+
           {/* Maliyet */}
           <div className="pt-3 border-t border-[--color-graphite]">
             <div className="text-xs text-info font-semibold mb-2">MALİYET</div>
             <div className="grid grid-cols-4 gap-3">
               <div>
                 <label className="text-xs text-[--color-text-muted] mb-1 block">İplik <span className="text-info text-[10px]">(Tutar %40)</span></label>
-                <input type="number" step="0.01" value={form.maliyet_iplik} onChange={e => setForm(p => ({ ...p, maliyet_iplik: e.target.value }))} placeholder="0" className={inputCls} />
+                <div className="px-3 py-2 rounded-lg bg-[--color-steel]/50 border border-[--color-graphite] text-sm font-mono text-info">
+                  {maskedEur(iplikler.length > 0 ? iplikToplam : (parseFloat(form.maliyet_iplik) || 0), loggedIn)}
+                </div>
               </div>
               <div>
                 <label className="text-xs text-[--color-text-muted] mb-1 block">Boya <span className="text-info text-[10px]">(Tutar %20)</span></label>
@@ -211,54 +275,75 @@ export function SiparislerSection({ currentUser }: { currentUser: string }) {
               <div>
                 <label className="text-xs text-[--color-text-muted] mb-1 block">Toplam Maliyet</label>
                 <div className="px-3 py-2 rounded-lg bg-[--color-steel]/50 border border-[--color-graphite] text-sm font-mono text-info">
-                  {maskedEur((parseFloat(form.maliyet_iplik) || 0) + (parseFloat(form.maliyet_boya) || 0) + (parseFloat(form.maliyet_navlun) || 0), loggedIn)}
+                  {maskedEur((iplikler.length > 0 ? iplikToplam : (parseFloat(form.maliyet_iplik) || 0)) + (parseFloat(form.maliyet_boya) || 0) + (parseFloat(form.maliyet_navlun) || 0), loggedIn)}
                 </div>
               </div>
             </div>
           </div>
-          {/* İplik Cinsi */}
-          <div>
-            <label className="text-xs text-[--color-text-muted] mb-1 block">İplik Cinsi</label>
-            <input list="iplik-cinsi-list" value={form.iplik_cinsi} onChange={e => setForm(p => ({ ...p, iplik_cinsi: e.target.value }))} placeholder="Seçin veya yazın" className={inputCls} />
-            <datalist id="iplik-cinsi-list">
-              {[...new Set(siparisler.map((s: any) => s.iplik_cinsi).filter(Boolean))].sort().map(c => (
-                <option key={c} value={c} />
+
+          {/* İplik Satırları */}
+          <div className="pt-3 border-t border-[--color-graphite]">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-xs text-info font-semibold">İPLİK ({iplikler.length} kalem)</div>
+              <button onClick={addIplik} className="flex items-center gap-1 px-2 py-1 rounded-lg bg-info/10 text-info text-xs font-medium hover:bg-info/20">
+                <Plus size={12} /> İplik Ekle
+              </button>
+            </div>
+            {iplikler.length === 0 && (
+              <div className="text-xs text-[--color-text-muted] text-center py-3 border border-dashed border-[--color-graphite] rounded-lg">
+                Henüz iplik eklenmedi. "İplik Ekle" butonuna tıklayın.
+              </div>
+            )}
+            <div className="space-y-2">
+              {iplikler.map((entry, i) => (
+                <div key={i} className="grid grid-cols-[minmax(0,1fr)_80px_12px_80px_55px_12px_90px_28px] gap-1.5 items-end">
+                  <div>
+                    <label className="text-[10px] text-[--color-text-muted] mb-0.5 block">İplik Cinsi</label>
+                    <input list="iplik-cinsi-list" value={entry.cinsi} onChange={e => updateIplik(i, 'cinsi', e.target.value)} placeholder="Seçin / yazın" className={inputCls} />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-[--color-text-muted] mb-0.5 block">Miktar</label>
+                    <input type="number" step="0.01" value={entry.miktar} onChange={e => updateIplik(i, 'miktar', e.target.value)} placeholder="0" className={inputCls} />
+                  </div>
+                  <div className="flex items-center justify-center pb-2 text-[--color-text-muted] font-bold text-xs">×</div>
+                  <div>
+                    <label className="text-[10px] text-[--color-text-muted] mb-0.5 block">B.Fiyat</label>
+                    <input type="number" step="0.01" value={entry.birim_fiyat} onChange={e => updateIplik(i, 'birim_fiyat', e.target.value)} placeholder="0" className={inputCls} />
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-[--color-text-muted] mb-0.5 block">Birim</label>
+                    <select value={entry.doviz} onChange={e => updateIplik(i, 'doviz', e.target.value)} className={inputCls}>
+                      <option value="EUR">EUR</option>
+                      <option value="USD">USD</option>
+                      <option value="TL">TL</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center justify-center pb-2 text-[--color-text-muted] font-bold text-xs">=</div>
+                  <div>
+                    <label className="text-[10px] text-[--color-text-muted] mb-0.5 block">Sonuç (€)</label>
+                    <div className="px-2 py-2 rounded-lg bg-[--color-steel]/50 border border-[--color-graphite] text-xs font-mono text-info">
+                      {maskedEur(calcIplikEur(entry, rates), loggedIn)}
+                    </div>
+                  </div>
+                  <div className="pb-2">
+                    <button onClick={() => removeIplik(i)} className="w-6 h-6 flex items-center justify-center rounded text-red-400 hover:bg-red-400/10"><X size={14} /></button>
+                  </div>
+                </div>
               ))}
+            </div>
+            {iplikler.length > 1 && (
+              <div className="flex justify-end mt-2 pt-2 border-t border-[--color-graphite]/50">
+                <div className="text-xs text-[--color-text-muted] mr-2 self-center">İplik Toplam:</div>
+                <div className="px-3 py-1.5 rounded-lg bg-info/10 border border-info/30 text-sm font-mono font-bold text-info">
+                  {maskedEur(iplikToplam, loggedIn)}
+                </div>
+              </div>
+            )}
+            <datalist id="iplik-cinsi-list">
+              {iplikCinsleri.map(c => <option key={c} value={c} />)}
             </datalist>
           </div>
-          <div className="grid grid-cols-[90px_16px_90px_60px_16px_110px] gap-2 items-end">
-            <div>
-              <label className="text-xs text-[--color-text-muted] mb-1 block">Miktar</label>
-              <input type="number" step="0.01" value={form.iplik_miktar} onChange={e => setForm(p => ({ ...p, iplik_miktar: e.target.value }))} placeholder="0" className={inputCls} />
-            </div>
-            <div className="flex items-center justify-center pb-2 text-[--color-text-muted] font-bold">×</div>
-            <div>
-              <label className="text-xs text-[--color-text-muted] mb-1 block">Birim Fiyat</label>
-              <input type="number" step="0.01" value={form.iplik_birim_fiyat} onChange={e => setForm(p => ({ ...p, iplik_birim_fiyat: e.target.value }))} placeholder="0" className={inputCls} />
-            </div>
-            <div>
-              <label className="text-xs text-[--color-text-muted] mb-1 block">Birim</label>
-              <select value={form.iplik_birim_doviz} onChange={e => setForm(p => ({ ...p, iplik_birim_doviz: e.target.value }))} className={inputCls}>
-                <option value="EUR">EUR</option>
-                <option value="USD">USD</option>
-                <option value="TL">TL</option>
-              </select>
-            </div>
-            <div className="flex items-center justify-center pb-2 text-[--color-text-muted] font-bold">=</div>
-            <div>
-              <label className="text-xs text-[--color-text-muted] mb-1 block">Sonuç <span className="text-info text-[10px]">(EUR)</span></label>
-              <div className="px-3 py-2 rounded-lg bg-[--color-steel]/50 border border-[--color-graphite] text-sm font-mono text-info">
-                {(() => {
-                  const raw = (parseFloat(form.iplik_miktar) || 0) * (parseFloat(form.iplik_birim_fiyat) || 0)
-                  if (raw === 0) return maskedEur(0, loggedIn)
-                  if (form.iplik_birim_doviz === 'EUR') return maskedEur(raw, loggedIn)
-                  if (form.iplik_birim_doviz === 'USD' && rates) return maskedEur(Math.round(raw * (rates.usd / rates.eur) * 100) / 100, loggedIn)
-                  if (form.iplik_birim_doviz === 'TL' && rates) return maskedEur(Math.round((raw / rates.eur) * 100) / 100, loggedIn)
-                  return maskedEur(raw, loggedIn)
-                })()}
-              </div>
-            </div>
-          </div>
+
           {/* Boyahane + Termin */}
           <div className="grid grid-cols-3 gap-3">
             <div>
@@ -312,13 +397,13 @@ export function SiparislerSection({ currentUser }: { currentUser: string }) {
           </div>
         </div>
 
-        {/* Column headers */}
-        <div className="grid grid-cols-[24px_85px_minmax(0,1fr)_90px_120px_110px_40px_75px_70px_75px_70px_75px_55px_45px_48px] border-b border-[--color-graphite] px-1">
+        {/* Column headers — Müşteri, Fatura No, Sipariş No yan yana */}
+        <div className={`grid grid-cols-[${GRID_COLS}] border-b border-[--color-graphite] px-1`}>
           <div className="py-2 text-[9px] text-[--color-text-muted] text-center" title="Hesap Dışı">HD</div>
-          <div className="px-2 py-2 text-xs text-[--color-text-muted]">Tarih</div>
           <div className="px-2 py-2 text-xs text-[--color-text-muted]">Müşteri</div>
           <div className="px-2 py-2 text-xs text-[--color-text-muted]">Fatura No</div>
           <div className="px-2 py-2 text-xs text-[--color-text-muted]">Sipariş No</div>
+          <div className="px-2 py-2 text-xs text-[--color-text-muted]">Tarih</div>
           <div className="px-2 py-2 text-xs text-[--color-text-muted] text-right">Tutar</div>
           <div className="px-2 py-2 text-xs text-[--color-text-muted] text-center">Vade</div>
           <div className="px-2 py-2 text-xs text-[--color-text-muted] text-right">İplik</div>
@@ -347,7 +432,7 @@ export function SiparislerSection({ currentUser }: { currentUser: string }) {
               </div>
               {/* Rows */}
               {wg.items.map(s => (
-                <div key={s.id} className={`grid grid-cols-[24px_85px_minmax(0,1fr)_90px_120px_110px_40px_75px_70px_75px_70px_75px_55px_45px_48px] px-1 h-9 overflow-hidden border-b border-[--color-graphite]/50 hover:bg-[--color-steel]/30 ${s.hesap_disi ? 'opacity-40' : ''}`}>
+                <div key={s.id} className={`grid grid-cols-[${GRID_COLS}] px-1 h-9 overflow-hidden border-b border-[--color-graphite]/50 hover:bg-[--color-steel]/30 ${s.hesap_disi ? 'opacity-40' : ''}`}>
                   <div className="flex items-center justify-center">
                     <button onClick={async () => {
                       if (!currentUser) return
@@ -357,15 +442,15 @@ export function SiparislerSection({ currentUser }: { currentUser: string }) {
                       {s.hesap_disi ? '✗' : ''}
                     </button>
                   </div>
-                  <div className="px-2 py-2 text-sm text-[--color-text-primary] whitespace-nowrap">{formatDate(s.tarih)}</div>
                   <div className={`px-2 py-2 text-sm min-w-0 truncate cursor-default ${s.hesap_disi ? 'line-through text-[--color-text-muted]' : 'text-[--color-text-primary]'}`} title={s.musteri}>{s.musteri}</div>
                   <div className="px-2 py-2 text-sm text-[--color-text-secondary] min-w-0 truncate" title={s.fatura_no || ''}>{s.fatura_no || '-'}</div>
                   <div className="px-2 py-2 text-sm text-[--color-text-secondary] min-w-0 truncate" title={s.siparis_no || ''}>{s.siparis_no || '-'}</div>
+                  <div className="px-2 py-2 text-sm text-[--color-text-primary] whitespace-nowrap">{formatDate(s.tarih)}</div>
                   <div className="px-2 py-2 text-right text-sm font-mono text-info whitespace-nowrap">
                     {loggedIn ? `${new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(s.tutar)} ${s.doviz === 'USD' ? '$' : '€'}` : '****'}
                   </div>
                   <div className="px-2 py-2 text-center text-sm text-[--color-text-muted]">{s.vade_gun ? `${s.vade_gun}g` : '-'}</div>
-                  <div className="px-2 py-2 text-right text-xs font-mono text-[--color-text-secondary] whitespace-nowrap">{(() => { const raw = ((s as any).iplik_miktar || 0) * ((s as any).iplik_birim_fiyat || 0); if (raw <= 0) return (s as any).maliyet_iplik > 0 ? maskedEur((s as any).maliyet_iplik, loggedIn) : '-'; const cur = (s as any).iplik_birim_doviz || 'EUR'; if (cur === 'EUR') return maskedEur(raw, loggedIn); if (cur === 'USD' && rates) return maskedEur(Math.round(raw * (rates.usd / rates.eur) * 100) / 100, loggedIn); if (cur === 'TL' && rates) return maskedEur(Math.round((raw / rates.eur) * 100) / 100, loggedIn); return maskedEur(raw, loggedIn) })()}</div>
+                  <div className="px-2 py-2 text-right text-xs font-mono text-[--color-text-secondary] whitespace-nowrap">{(() => { const t = getIplikTotal(s); return t > 0 ? maskedEur(t, loggedIn) : '-' })()}</div>
                   <div className="px-2 py-2 text-center text-[10px] text-[--color-text-secondary] whitespace-nowrap">{(s as any).iplik_termin ? formatDate((s as any).iplik_termin) : '-'}</div>
                   <div className="px-2 py-2 text-right text-xs font-mono text-[--color-text-secondary] whitespace-nowrap">{(s as any).maliyet_boya > 0 ? maskedEur((s as any).maliyet_boya, loggedIn) : '-'}</div>
                   <div className="px-2 py-2 text-center text-[10px] text-[--color-text-secondary] whitespace-nowrap">{(s as any).boya_termin ? formatDate((s as any).boya_termin) : '-'}</div>

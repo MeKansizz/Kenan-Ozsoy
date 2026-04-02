@@ -344,15 +344,15 @@ router.get('/siparisler/summary', (_req, res) => {
 router.post('/siparisler', (req, res) => {
   const db = getDb()
   const id = randomUUID()
-  const { tarih, fatura_no, musteri, siparis_no, tutar, kur, doviz, vade_gun, durum, notlar, hesap_disi, maliyet_iplik, maliyet_boya, maliyet_navlun, iplik_cinsi, iplik_miktar, iplik_birim_fiyat, iplik_birim_doviz, boyahane, iplik_termin, boya_termin, user } = req.body
+  const { tarih, fatura_no, musteri, siparis_no, tutar, kur, doviz, vade_gun, durum, notlar, hesap_disi, maliyet_iplik, maliyet_boya, maliyet_navlun, iplik_cinsi, iplik_miktar, iplik_birim_fiyat, iplik_birim_doviz, iplik_entries, boyahane, iplik_termin, boya_termin, user } = req.body
 
   const tutar_eur = tutar // EUR or USD amount directly
   const now = new Date().toISOString()
 
   db.prepare(`
-    INSERT INTO kenan_siparisler (id, tarih, fatura_no, musteri, siparis_no, tutar, kur, doviz, tutar_eur, vade_gun, durum, notlar, hesap_disi, maliyet_iplik, maliyet_boya, maliyet_navlun, iplik_cinsi, iplik_miktar, iplik_birim_fiyat, iplik_birim_doviz, boyahane, iplik_termin, boya_termin, updated_by, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(id, tarih, fatura_no || null, musteri, siparis_no || null, tutar, kur || null, doviz || 'EUR', tutar_eur, vade_gun || null, durum || 'beklemede', notlar || null, hesap_disi ? 1 : 0, maliyet_iplik || 0, maliyet_boya || 0, maliyet_navlun || 0, iplik_cinsi || '', iplik_miktar || 0, iplik_birim_fiyat || 0, iplik_birim_doviz || 'EUR', boyahane || '', iplik_termin || '', boya_termin || '', user || null, now)
+    INSERT INTO kenan_siparisler (id, tarih, fatura_no, musteri, siparis_no, tutar, kur, doviz, tutar_eur, vade_gun, durum, notlar, hesap_disi, maliyet_iplik, maliyet_boya, maliyet_navlun, iplik_cinsi, iplik_miktar, iplik_birim_fiyat, iplik_birim_doviz, iplik_entries, boyahane, iplik_termin, boya_termin, updated_by, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(id, tarih, fatura_no || null, musteri, siparis_no || null, tutar, kur || null, doviz || 'EUR', tutar_eur, vade_gun || null, durum || 'beklemede', notlar || null, hesap_disi ? 1 : 0, maliyet_iplik || 0, maliyet_boya || 0, maliyet_navlun || 0, iplik_cinsi || '', iplik_miktar || 0, iplik_birim_fiyat || 0, iplik_birim_doviz || 'EUR', iplik_entries ? JSON.stringify(iplik_entries) : '[]', boyahane || '', iplik_termin || '', boya_termin || '', user || null, now)
 
   logAudit('kenan_siparisler', id, 'create', { tarih, musteri, tutar, doviz, durum }, user || 'system')
   res.json({ id })
@@ -360,7 +360,7 @@ router.post('/siparisler', (req, res) => {
 
 router.put('/siparisler/:id', (req, res) => {
   const db = getDb()
-  const { tarih, fatura_no, musteri, siparis_no, tutar, kur, doviz, tutar_eur, vade_gun, durum, notlar, hesap_disi, maliyet_iplik, maliyet_boya, maliyet_navlun, iplik_cinsi, iplik_miktar, iplik_birim_fiyat, iplik_birim_doviz, boyahane, iplik_termin, boya_termin, user } = req.body
+  const { tarih, fatura_no, musteri, siparis_no, tutar, kur, doviz, tutar_eur, vade_gun, durum, notlar, hesap_disi, maliyet_iplik, maliyet_boya, maliyet_navlun, iplik_cinsi, iplik_miktar, iplik_birim_fiyat, iplik_birim_doviz, iplik_entries, boyahane, iplik_termin, boya_termin, user } = req.body
 
   const old = db.prepare('SELECT * FROM kenan_siparisler WHERE id = ?').get(req.params.id) as any
   if (!old) return res.status(404).json({ message: 'Kayıt bulunamadı' })
@@ -368,9 +368,9 @@ router.put('/siparisler/:id', (req, res) => {
   const now = new Date().toISOString()
 
   db.prepare(`
-    UPDATE kenan_siparisler SET tarih=?, fatura_no=?, musteri=?, siparis_no=?, tutar=?, kur=?, doviz=?, tutar_eur=?, vade_gun=?, durum=?, notlar=?, hesap_disi=?, maliyet_iplik=?, maliyet_boya=?, maliyet_navlun=?, iplik_cinsi=?, iplik_miktar=?, iplik_birim_fiyat=?, iplik_birim_doviz=?, boyahane=?, iplik_termin=?, boya_termin=?, updated_by=?, updated_at=?
+    UPDATE kenan_siparisler SET tarih=?, fatura_no=?, musteri=?, siparis_no=?, tutar=?, kur=?, doviz=?, tutar_eur=?, vade_gun=?, durum=?, notlar=?, hesap_disi=?, maliyet_iplik=?, maliyet_boya=?, maliyet_navlun=?, iplik_cinsi=?, iplik_miktar=?, iplik_birim_fiyat=?, iplik_birim_doviz=?, iplik_entries=?, boyahane=?, iplik_termin=?, boya_termin=?, updated_by=?, updated_at=?
     WHERE id=?
-  `).run(tarih, fatura_no || null, musteri, siparis_no || null, tutar, kur || null, doviz || 'EUR', tutar_eur || tutar, vade_gun || null, durum || 'beklemede', notlar || null, hesap_disi !== undefined ? (hesap_disi ? 1 : 0) : (old.hesap_disi || 0), maliyet_iplik !== undefined ? (maliyet_iplik || 0) : (old.maliyet_iplik || 0), maliyet_boya !== undefined ? (maliyet_boya || 0) : (old.maliyet_boya || 0), maliyet_navlun !== undefined ? (maliyet_navlun || 0) : (old.maliyet_navlun || 0), iplik_cinsi !== undefined ? (iplik_cinsi || '') : (old.iplik_cinsi || ''), iplik_miktar !== undefined ? (iplik_miktar || 0) : (old.iplik_miktar || 0), iplik_birim_fiyat !== undefined ? (iplik_birim_fiyat || 0) : (old.iplik_birim_fiyat || 0), iplik_birim_doviz !== undefined ? (iplik_birim_doviz || 'EUR') : (old.iplik_birim_doviz || 'EUR'), boyahane !== undefined ? (boyahane || '') : (old.boyahane || ''), iplik_termin !== undefined ? (iplik_termin || '') : (old.iplik_termin || ''), boya_termin !== undefined ? (boya_termin || '') : (old.boya_termin || ''), user || null, now, req.params.id)
+  `).run(tarih, fatura_no || null, musteri, siparis_no || null, tutar, kur || null, doviz || 'EUR', tutar_eur || tutar, vade_gun || null, durum || 'beklemede', notlar || null, hesap_disi !== undefined ? (hesap_disi ? 1 : 0) : (old.hesap_disi || 0), maliyet_iplik !== undefined ? (maliyet_iplik || 0) : (old.maliyet_iplik || 0), maliyet_boya !== undefined ? (maliyet_boya || 0) : (old.maliyet_boya || 0), maliyet_navlun !== undefined ? (maliyet_navlun || 0) : (old.maliyet_navlun || 0), iplik_cinsi !== undefined ? (iplik_cinsi || '') : (old.iplik_cinsi || ''), iplik_miktar !== undefined ? (iplik_miktar || 0) : (old.iplik_miktar || 0), iplik_birim_fiyat !== undefined ? (iplik_birim_fiyat || 0) : (old.iplik_birim_fiyat || 0), iplik_birim_doviz !== undefined ? (iplik_birim_doviz || 'EUR') : (old.iplik_birim_doviz || 'EUR'), iplik_entries !== undefined ? JSON.stringify(iplik_entries) : (old.iplik_entries || '[]'), boyahane !== undefined ? (boyahane || '') : (old.boyahane || ''), iplik_termin !== undefined ? (iplik_termin || '') : (old.iplik_termin || ''), boya_termin !== undefined ? (boya_termin || '') : (old.boya_termin || ''), user || null, now, req.params.id)
 
   const changes: Record<string, { old: any; new: any }> = {}
   const fields = ['tarih', 'fatura_no', 'musteri', 'siparis_no', 'tutar', 'kur', 'doviz', 'vade_gun', 'durum', 'notlar']

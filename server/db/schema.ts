@@ -160,4 +160,7 @@ export function initSchema() {
   if (!sipCols.find((c: any) => c.name === 'iplik_birim_doviz')) {
     db.exec("ALTER TABLE kenan_siparisler ADD COLUMN iplik_birim_doviz TEXT DEFAULT 'EUR'")
   }
+  if (!sipCols.find((c: any) => c.name === 'iplik_entries')) {
+    db.exec("ALTER TABLE kenan_siparisler ADD COLUMN iplik_entries TEXT DEFAULT '[]'")
+  }
 }
