@@ -196,4 +196,9 @@ export function initSchema() {
   if (maliyetCols.length > 0 && !maliyetCols.find((c: any) => c.name === 'grup')) {
     db.exec("ALTER TABLE kenan_planlama_maliyet ADD COLUMN grup TEXT DEFAULT ''")
   }
+  // Migration: add banka column to faturalar if missing
+  const fatCols = db.prepare("PRAGMA table_info(kenan_faturalar)").all() as any[]
+  if (!fatCols.find((c: any) => c.name === 'banka')) {
+    db.exec("ALTER TABLE kenan_faturalar ADD COLUMN banka TEXT DEFAULT ''")
+  }
 }

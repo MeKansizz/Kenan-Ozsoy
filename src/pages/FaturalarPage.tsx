@@ -12,7 +12,7 @@ interface Fatura {
   id: string; tarih: string; fatura_no: string; musteri: string;
   tutar: number; doviz: string; kur: number; tutar_eur: number;
   vade_gun: number; vade_tarih: string; durum: string; notlar: string;
-  hesap_disi: number; updated_by: string;
+  hesap_disi: number; banka: string; updated_by: string;
 }
 
 function calcVadeTarih(tarih: string, vadeGun: number): string {
@@ -34,7 +34,7 @@ export function FaturalarSection({ currentUser }: { currentUser: string }) {
     tarih: new Date().toISOString().slice(0, 10),
     fatura_no: '', musteri: '', tutar: '', doviz: 'EUR',
     kur: '', vade_gun: '', vade_tarih: '',
-    durum: 'beklemede', notlar: ''
+    durum: 'beklemede', notlar: '', banka: ''
   })
 
   const load = async () => {
@@ -124,7 +124,7 @@ export function FaturalarSection({ currentUser }: { currentUser: string }) {
       tarih: new Date().toISOString().slice(0, 10),
       fatura_no: '', musteri: '', tutar: '', doviz: 'EUR',
       kur: '', vade_gun: '', vade_tarih: '',
-      durum: 'beklemede', notlar: ''
+      durum: 'beklemede', notlar: '', banka: ''
     })
     setEditId(null)
     setShowForm(false)
@@ -156,7 +156,8 @@ export function FaturalarSection({ currentUser }: { currentUser: string }) {
       vade_gun: f.vade_gun ? String(f.vade_gun) : '',
       vade_tarih: f.vade_tarih || '',
       durum: f.durum,
-      notlar: f.notlar || ''
+      notlar: f.notlar || '',
+      banka: f.banka || ''
     })
     setEditId(f.id)
     setShowForm(true)
@@ -274,6 +275,17 @@ export function FaturalarSection({ currentUser }: { currentUser: string }) {
               </select>
             </div>
             <div>
+              <label className="text-xs text-[--color-text-muted] mb-1 block">Banka</label>
+              <select value={form.banka} onChange={e => setForm(p => ({ ...p, banka: e.target.value }))} className={inputCls}>
+                <option value="">Seçiniz</option>
+                <option value="HALKBANK">HALKBANK</option>
+                <option value="İŞ BANKASI">İŞ BANKASI</option>
+                <option value="YAPIKREDİ">YAPIKREDİ</option>
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-4 gap-3">
+            <div className="col-span-4">
               <label className="text-xs text-[--color-text-muted] mb-1 block">Notlar</label>
               <input value={form.notlar} onChange={e => setForm(p => ({ ...p, notlar: e.target.value }))} className={inputCls} />
             </div>
@@ -311,7 +323,7 @@ export function FaturalarSection({ currentUser }: { currentUser: string }) {
         </div>
 
         {/* Column headers */}
-        <div className="grid grid-cols-[24px_85px_100px_minmax(0,1fr)_120px_50px_120px_60px_85px_60px_50px_48px] border-b border-[--color-graphite] px-1">
+        <div className="grid grid-cols-[24px_85px_100px_minmax(0,1fr)_120px_50px_120px_60px_85px_80px_60px_50px_48px] border-b border-[--color-graphite] px-1">
           <div className="py-2 text-[9px] text-[--color-text-muted] text-center" title="Hesap Dışı">HD</div>
           <div className="px-2 py-2 text-xs text-[--color-text-muted]">Tarih</div>
           <div className="px-2 py-2 text-xs text-[--color-text-muted]">Fatura No</div>
@@ -321,6 +333,7 @@ export function FaturalarSection({ currentUser }: { currentUser: string }) {
           <div className="px-2 py-2 text-xs text-[--color-text-muted] text-right">EUR</div>
           <div className="px-2 py-2 text-xs text-[--color-text-muted] text-right">Vade</div>
           <div className="px-2 py-2 text-xs text-[--color-text-muted]">Vade Tarihi</div>
+          <div className="px-2 py-2 text-xs text-[--color-text-muted]">Banka</div>
           <div className="px-2 py-2 text-xs text-[--color-text-muted] text-center">Durum</div>
           <div className="px-2 py-2 text-xs text-[--color-text-muted] text-center">Kişi</div>
           <div></div>
@@ -331,7 +344,7 @@ export function FaturalarSection({ currentUser }: { currentUser: string }) {
           <div className="px-4 py-8 text-center text-sm text-[--color-text-muted]">Henüz fatura kaydı yok</div>
         ) : (
           sorted.map(f => (
-            <div key={f.id} className={`grid grid-cols-[24px_85px_100px_minmax(0,1fr)_120px_50px_120px_60px_85px_60px_50px_48px] px-1 h-9 overflow-hidden border-b border-[--color-graphite]/50 hover:bg-[--color-steel]/30 ${f.hesap_disi ? 'opacity-40' : ''}`}>
+            <div key={f.id} className={`grid grid-cols-[24px_85px_100px_minmax(0,1fr)_120px_50px_120px_60px_85px_80px_60px_50px_48px] px-1 h-9 overflow-hidden border-b border-[--color-graphite]/50 hover:bg-[--color-steel]/30 ${f.hesap_disi ? 'opacity-40' : ''}`}>
               <div className="flex items-center justify-center">
                 <button onClick={async () => {
                   if (!currentUser) return
@@ -349,6 +362,7 @@ export function FaturalarSection({ currentUser }: { currentUser: string }) {
               <div className="px-2 py-2 text-right text-sm font-mono text-info whitespace-nowrap">{maskedEur(f.tutar_eur, loggedIn)}</div>
               <div className="px-2 py-2 text-right text-xs text-[--color-text-muted]">{f.vade_gun ? `${f.vade_gun}g` : '-'}</div>
               <div className="px-2 py-2 text-xs text-[--color-text-muted] whitespace-nowrap">{f.vade_tarih ? formatDate(f.vade_tarih) : '-'}</div>
+              <div className="px-2 py-2 text-[10px] text-[--color-text-muted] truncate">{f.banka || '-'}</div>
               <div className="px-2 py-2 text-center whitespace-nowrap">
                 {f.hesap_disi ? (
                   <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-400">H.Dışı</span>
