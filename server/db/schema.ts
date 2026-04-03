@@ -91,6 +91,25 @@ export function initSchema() {
       created_at TEXT DEFAULT (datetime('now'))
     );
 
+    CREATE TABLE IF NOT EXISTS kenan_faturalar (
+      id TEXT PRIMARY KEY,
+      tarih TEXT NOT NULL,
+      fatura_no TEXT,
+      musteri TEXT NOT NULL,
+      tutar REAL DEFAULT 0,
+      doviz TEXT DEFAULT 'EUR',
+      kur REAL,
+      tutar_eur REAL DEFAULT 0,
+      vade_gun INTEGER,
+      vade_tarih TEXT,
+      durum TEXT DEFAULT 'beklemede',
+      notlar TEXT,
+      hesap_disi INTEGER DEFAULT 0,
+      updated_by TEXT,
+      updated_at TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+
     CREATE TABLE IF NOT EXISTS kenan_audit_log (
       id TEXT PRIMARY KEY,
       table_name TEXT NOT NULL,

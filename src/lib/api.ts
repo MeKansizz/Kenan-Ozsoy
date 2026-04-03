@@ -82,4 +82,12 @@ export const api = {
   kenanUpdateMaliyetSira: (id: string, sira: number) => request<any>(`/kenan/planlama/maliyet/${id}/sira`, { method: 'PUT', body: JSON.stringify({ sira }) }),
   kenanDeleteMaliyetPlan: (id: string) => request<any>(`/kenan/planlama/maliyet/${id}`, { method: 'DELETE' }),
   kenanGetTedarikPlanlama: () => request<any[]>('/kenan/tedarik-planlama'),
+
+  // Faturalar
+  kenanCreateFaturaFromSiparis: (siparis_id: string, user?: string) => request<any>('/kenan/faturalar/from-siparis', { method: 'POST', body: JSON.stringify({ siparis_id, user }) }),
+  kenanDeleteFaturaFromSiparis: (siparis_id: string, user?: string) => request<any>('/kenan/faturalar/from-siparis', { method: 'DELETE', body: JSON.stringify({ siparis_id, user }) }),
+  kenanGetFaturalar: () => request<any[]>('/kenan/faturalar'),
+  kenanCreateFatura: (data: any) => request<any>('/kenan/faturalar', { method: 'POST', body: JSON.stringify(data) }),
+  kenanUpdateFatura: (id: string, data: any) => request<any>(`/kenan/faturalar/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  kenanDeleteFatura: (id: string, user?: string) => request<any>(`/kenan/faturalar/${id}?user=${user || ''}`, { method: 'DELETE' }),
 }

@@ -730,6 +730,113 @@ router.delete('/planlama/maliyet/:id', (req, res) => {
   res.json({ success: true })
 })
 
+// === FATURALAR ===
+
+router.get('/faturalar', (_req, res) => {
+  const db = getDb()
+  const rows = db.prepare('SELECT * FROM kenan_faturalar ORDER BY tarih DESC').all()
+  res.json(rows)
+})
+
+router.post('/faturalar', (req, res) => {
+  const db = getDb()
+  const id = randomUUID()
+  const { tarih, fatura_no, musteri, tutar, doviz, kur, vade_gun, vade_tarih, durum, notlar, hesap_disi, user } = req.body
+  const now = new Date().toISOString()
+
+  // EUR hesaplama
+  let tutar_eur = tutar
+  if (doviz === 'TL' && kur > 0) tutar_eur = Math.round((tutar / kur) * 100) / 100
+  else if (doviz === 'USD' && kur > 0) tutar_eur = Math.round((tutar / kur) * 100) / 100
+
+  db.prepare(`
+    INSERT INTO kenan_faturalar (id, tarih, fatura_no, musteri, tutar, doviz, kur, tutar_eur, vade_gun, vade_tarih, durum, notlar, hesap_disi, updated_by, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(id, tarih, fatura_no || null, musteri, tutar || 0, doviz || 'EUR', kur || null, tutar_eur, vade_gun || null, vade_tarih || null, durum || 'beklemede', notlar || null, hesap_disi ? 1 : 0, user || null, now)
+
+  logAudit('kenan_faturalar', id, 'create', { tarih, musteri, tutar, doviz, durum }, user || 'system')
+  res.json({ id })
+})
+
+// Sipariş → Fatura aktarma
+router.post('/faturalar/from-siparis', (req, res) => {
+  const db = getDb()
+  const { siparis_id, user } = req.body
+  const sip = db.prepare('SELECT * FROM kenan_siparisler WHERE id = ?').get(siparis_id) as any
+  if (!sip) return res.status(404).json({ message: 'Sipariş bulunamadı' })
+
+  // Zaten aktarılmış mı kontrol et
+  const existing = db.prepare('SELECT id FROM kenan_faturalar WHERE COALESCE(fatura_no, \'\') = COALESCE(?, \'\') AND musteri = ? AND tutar = ?').get(sip.fatura_no || null, sip.musteri, sip.tutar) as any
+  if (existing) return res.status(400).json({ message: 'Bu sipariş zaten faturalara aktarılmış' })
+
+  const id = randomUUID()
+  const now = new Date().toISOString()
+
+  // Vade tarihi hesapla
+  let vade_tarih: string | null = null
+  if (sip.tarih && sip.vade_gun) {
+    const d = new Date(sip.tarih)
+    d.setDate(d.getDate() + sip.vade_gun)
+    vade_tarih = d.toISOString().slice(0, 10)
+  }
+
+  db.prepare(`
+    INSERT INTO kenan_faturalar (id, tarih, fatura_no, musteri, tutar, doviz, kur, tutar_eur, vade_gun, vade_tarih, durum, notlar, updated_by, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(id, sip.tarih, sip.fatura_no || null, sip.musteri, sip.tutar || 0, sip.doviz || 'EUR', sip.kur || null, sip.tutar_eur || sip.tutar || 0, sip.vade_gun || null, vade_tarih, 'beklemede', null, user || null, now)
+
+  logAudit('kenan_faturalar', id, 'create_from_siparis', { siparis_id, musteri: sip.musteri, tutar: sip.tutar }, user || 'system')
+  res.json({ id })
+})
+
+// Sipariş beklemede'ye dönünce faturadan kaldır
+router.delete('/faturalar/from-siparis', (req, res) => {
+  const db = getDb()
+  const { siparis_id, user } = req.body || {}
+  const sip = db.prepare('SELECT * FROM kenan_siparisler WHERE id = ?').get(siparis_id) as any
+  if (!sip) return res.status(404).json({ message: 'Sipariş bulunamadı' })
+
+  const existing = db.prepare('SELECT id FROM kenan_faturalar WHERE COALESCE(fatura_no, \'\') = COALESCE(?, \'\') AND musteri = ? AND tutar = ?').get(sip.fatura_no || null, sip.musteri, sip.tutar) as any
+  if (existing) {
+    db.prepare('DELETE FROM kenan_faturalar WHERE id = ?').run(existing.id)
+    logAudit('kenan_faturalar', existing.id, 'delete_from_siparis', { siparis_id, musteri: sip.musteri }, user || 'system')
+  }
+  res.json({ success: true })
+})
+
+router.put('/faturalar/:id', (req, res) => {
+  const db = getDb()
+  const { tarih, fatura_no, musteri, tutar, doviz, kur, vade_gun, vade_tarih, durum, notlar, hesap_disi, user } = req.body
+  const now = new Date().toISOString()
+
+  const old = db.prepare('SELECT * FROM kenan_faturalar WHERE id = ?').get(req.params.id) as any
+  if (!old) return res.status(404).json({ message: 'Fatura bulunamadı' })
+
+  let tutar_eur = tutar
+  if (doviz === 'TL' && kur > 0) tutar_eur = Math.round((tutar / kur) * 100) / 100
+  else if (doviz === 'USD' && kur > 0) tutar_eur = Math.round((tutar / kur) * 100) / 100
+
+  db.prepare(`
+    UPDATE kenan_faturalar SET tarih=?, fatura_no=?, musteri=?, tutar=?, doviz=?, kur=?, tutar_eur=?, vade_gun=?, vade_tarih=?, durum=?, notlar=?, hesap_disi=?, updated_by=?, updated_at=?
+    WHERE id=?
+  `).run(tarih, fatura_no || null, musteri, tutar || 0, doviz || 'EUR', kur || null, tutar_eur, vade_gun || null, vade_tarih || null, durum || 'beklemede', notlar || null, hesap_disi !== undefined ? (hesap_disi ? 1 : 0) : (old.hesap_disi || 0), user || null, now, req.params.id)
+
+  const changes: Record<string, { old: any; new: any }> = {}
+  for (const f of ['tarih', 'fatura_no', 'musteri', 'tutar', 'kur', 'doviz', 'vade_gun', 'vade_tarih', 'durum', 'notlar']) {
+    if ((req.body as any)[f] !== undefined && (req.body as any)[f] !== old[f]) changes[f] = { old: old[f], new: (req.body as any)[f] }
+  }
+  if (Object.keys(changes).length > 0) logAudit('kenan_faturalar', req.params.id, 'update', changes, user || 'system')
+  res.json({ success: true })
+})
+
+router.delete('/faturalar/:id', (req, res) => {
+  const db = getDb()
+  const old = db.prepare('SELECT * FROM kenan_faturalar WHERE id = ?').get(req.params.id) as any
+  db.prepare('DELETE FROM kenan_faturalar WHERE id = ?').run(req.params.id)
+  if (old) logAudit('kenan_faturalar', req.params.id, 'delete', old, req.query.user as string || 'system')
+  res.json({ success: true })
+})
+
 // === TEDARİK PLANLAMA ===
 // İplik cinsi bazında gruplanmış toplam — detayda sipariş bazlı kg/fiyat
 router.get('/tedarik-planlama', (_req, res) => {

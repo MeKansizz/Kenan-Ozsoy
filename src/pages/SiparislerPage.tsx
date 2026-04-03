@@ -470,6 +470,11 @@ export function SiparislerSection({ currentUser }: { currentUser: string }) {
                         if (!currentUser) return
                         const newDurum = s.durum === 'tamamlandi' ? 'beklemede' : 'tamamlandi'
                         await api.kenanUpdateSiparis(s.id, { ...s, durum: newDurum, user: currentUser })
+                        if (newDurum === 'tamamlandi') {
+                          try { await api.kenanCreateFaturaFromSiparis(s.id, currentUser) } catch {}
+                        } else {
+                          try { await api.kenanDeleteFaturaFromSiparis(s.id, currentUser) } catch {}
+                        }
                         load()
                       }} className={`text-[10px] px-1.5 py-0.5 rounded-full cursor-pointer hover:opacity-80 ${s.durum === 'tamamlandi' ? 'bg-emerald-400/10 text-emerald-400' : 'bg-amber-400/10 text-amber-400'}`}>
                         {DURUM_LABELS[s.durum] || s.durum}

@@ -5,6 +5,7 @@ import { OdemePlanlamaSection } from './OdemePlanlamaPage'
 import { OdemelerSection } from './OdemelerPage'
 import { SiparislerSection } from './SiparislerPage'
 import { TedarikPlanlamaSection } from './TedarikPlanlamaPage'
+import { FaturalarSection } from './FaturalarPage'
 import { DURUM_LABELS, BASLANGIC_BAKIYE, formatKur, formatDate, maskedEur } from '@/lib/kenan-utils'
 
 // ==================== LOGIN PANEL ====================
@@ -410,7 +411,7 @@ function CariSection({ currentUser }: { currentUser: string }) {
 // ==================== ANA SAYFA ====================
 
 export function KenanOzsoyPage() {
-  const [tab, setTab] = useState<'cari' | 'odemeler' | 'siparisler' | 'planlama' | 'tedarik'>('cari')
+  const [tab, setTab] = useState<'cari' | 'odemeler' | 'siparisler' | 'planlama' | 'tedarik' | 'faturalar'>('cari')
   const [currentUser, setCurrentUser] = useState(() => localStorage.getItem('kenan_current_user') || '')
   const [currentRole, setCurrentRole] = useState(() => localStorage.getItem('kenan_current_role') || '')
 
@@ -457,6 +458,10 @@ export function KenanOzsoyPage() {
           className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${tab === 'tedarik' ? 'bg-purple-500 text-white' : 'text-[--color-text-secondary] hover:text-[--color-text-primary]'}`}>
           Tedarik Planlama
         </button>
+        <button onClick={() => setTab('faturalar')}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${tab === 'faturalar' ? 'bg-info text-white' : 'text-[--color-text-secondary] hover:text-[--color-text-primary]'}`}>
+          Nakit Akış Planlama
+        </button>
       </div>
 
       {tab === 'cari' && <CariSection currentUser={currentUser} />}
@@ -464,6 +469,7 @@ export function KenanOzsoyPage() {
       {tab === 'siparisler' && <SiparislerSection currentUser={currentUser} />}
       {tab === 'planlama' && <OdemePlanlamaSection currentUser={currentUser} />}
       {tab === 'tedarik' && <TedarikPlanlamaSection currentUser={currentUser} />}
+      {tab === 'faturalar' && <FaturalarSection currentUser={currentUser} />}
     </div>
   )
 }
