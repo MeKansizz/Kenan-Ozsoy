@@ -339,11 +339,27 @@ export function FaturalarSection({ currentUser }: { currentUser: string }) {
           <div></div>
         </div>
 
-        {/* Rows - vade tarihine göre sıralı */}
+        {/* Rows - vade tarihine göre sıralı, kullanıcı / system ayrımı */}
         {sorted.length === 0 ? (
           <div className="px-4 py-8 text-center text-sm text-[--color-text-muted]">Henüz fatura kaydı yok</div>
-        ) : (
-          sorted.map(f => (
+        ) : (() => {
+          const userRows = sorted.filter(f => f.updated_by && f.updated_by !== 'system')
+          const systemRows = sorted.filter(f => !f.updated_by || f.updated_by === 'system')
+          const allRows: (Fatura | 'separator')[] = [
+            ...userRows,
+            ...(userRows.length > 0 && systemRows.length > 0 ? ['separator' as const] : []),
+            ...systemRows,
+          ]
+          return allRows.map(item => {
+            if (item === 'separator') {
+              return (
+                <div key="__sep__" className="h-7 bg-red-600/80 flex items-center px-4">
+                  <span className="text-[10px] font-bold text-white tracking-wider">TOPLU GİRİŞ (SYSTEM)</span>
+                </div>
+              )
+            }
+            const f = item
+            return (
             <div key={f.id} className={`grid grid-cols-[24px_85px_100px_minmax(0,1fr)_120px_50px_120px_60px_85px_80px_60px_50px_48px] px-1 h-9 overflow-hidden border-b border-[--color-graphite]/50 hover:bg-[--color-steel]/30 ${f.hesap_disi ? 'opacity-40' : ''}`}>
               <div className="flex items-center justify-center">
                 <button onClick={async () => {
@@ -383,8 +399,9 @@ export function FaturalarSection({ currentUser }: { currentUser: string }) {
                 <button onClick={async () => { if (!currentUser) return; if (confirm('Sil?')) { await api.kenanDeleteFatura(f.id, currentUser); load() } }} className="text-[--color-text-muted] hover:text-red-400"><Trash2 size={11} /></button>
               </div>
             </div>
-          ))
-        )}
+            )
+          })
+        })()}
 
         {/* Footer */}
         <div className="px-3 py-2 border-t border-[--color-graphite] text-xs text-[--color-text-muted]">{faturalar.length} fatura</div>
