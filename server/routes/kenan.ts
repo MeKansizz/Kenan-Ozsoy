@@ -741,7 +741,7 @@ router.get('/faturalar', (_req, res) => {
 router.post('/faturalar', (req, res) => {
   const db = getDb()
   const id = randomUUID()
-  const { tarih, fatura_no, musteri, tutar, doviz, kur, vade_gun, vade_tarih, durum, notlar, hesap_disi, banka, user } = req.body
+  const { tarih, fatura_no, musteri, tutar, doviz, kur, vade_gun, vade_tarih, durum, notlar, hesap_disi, banka, temlik, user } = req.body
   const now = new Date().toISOString()
 
   // EUR hesaplama
@@ -750,9 +750,9 @@ router.post('/faturalar', (req, res) => {
   else if (doviz === 'USD' && kur > 0) tutar_eur = Math.round((tutar / kur) * 100) / 100
 
   db.prepare(`
-    INSERT INTO kenan_faturalar (id, tarih, fatura_no, musteri, tutar, doviz, kur, tutar_eur, vade_gun, vade_tarih, durum, notlar, hesap_disi, banka, updated_by, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(id, tarih, fatura_no || null, musteri, tutar || 0, doviz || 'EUR', kur || null, tutar_eur, vade_gun || null, vade_tarih || null, durum || 'beklemede', notlar || null, hesap_disi ? 1 : 0, banka || null, user || null, now)
+    INSERT INTO kenan_faturalar (id, tarih, fatura_no, musteri, tutar, doviz, kur, tutar_eur, vade_gun, vade_tarih, durum, notlar, hesap_disi, banka, temlik, updated_by, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(id, tarih, fatura_no || null, musteri, tutar || 0, doviz || 'EUR', kur || null, tutar_eur, vade_gun || null, vade_tarih || null, durum || 'beklemede', notlar || null, hesap_disi ? 1 : 0, banka || null, temlik || 'verilmedi', user || null, now)
 
   logAudit('kenan_faturalar', id, 'create', { tarih, musteri, tutar, doviz, durum }, user || 'system')
   res.json({ id })
@@ -806,7 +806,7 @@ router.delete('/faturalar/from-siparis', (req, res) => {
 
 router.put('/faturalar/:id', (req, res) => {
   const db = getDb()
-  const { tarih, fatura_no, musteri, tutar, doviz, kur, vade_gun, vade_tarih, durum, notlar, hesap_disi, banka, user } = req.body
+  const { tarih, fatura_no, musteri, tutar, doviz, kur, vade_gun, vade_tarih, durum, notlar, hesap_disi, banka, temlik, user } = req.body
   const now = new Date().toISOString()
 
   const old = db.prepare('SELECT * FROM kenan_faturalar WHERE id = ?').get(req.params.id) as any
@@ -817,9 +817,9 @@ router.put('/faturalar/:id', (req, res) => {
   else if (doviz === 'USD' && kur > 0) tutar_eur = Math.round((tutar / kur) * 100) / 100
 
   db.prepare(`
-    UPDATE kenan_faturalar SET tarih=?, fatura_no=?, musteri=?, tutar=?, doviz=?, kur=?, tutar_eur=?, vade_gun=?, vade_tarih=?, durum=?, notlar=?, hesap_disi=?, banka=?, updated_by=?, updated_at=?
+    UPDATE kenan_faturalar SET tarih=?, fatura_no=?, musteri=?, tutar=?, doviz=?, kur=?, tutar_eur=?, vade_gun=?, vade_tarih=?, durum=?, notlar=?, hesap_disi=?, banka=?, temlik=?, updated_by=?, updated_at=?
     WHERE id=?
-  `).run(tarih, fatura_no || null, musteri, tutar || 0, doviz || 'EUR', kur || null, tutar_eur, vade_gun || null, vade_tarih || null, durum || 'beklemede', notlar || null, hesap_disi !== undefined ? (hesap_disi ? 1 : 0) : (old.hesap_disi || 0), banka || null, user || null, now, req.params.id)
+  `).run(tarih, fatura_no || null, musteri, tutar || 0, doviz || 'EUR', kur || null, tutar_eur, vade_gun || null, vade_tarih || null, durum || 'beklemede', notlar || null, hesap_disi !== undefined ? (hesap_disi ? 1 : 0) : (old.hesap_disi || 0), banka || null, temlik || old.temlik || 'verilmedi', user || null, now, req.params.id)
 
   const changes: Record<string, { old: any; new: any }> = {}
   for (const f of ['tarih', 'fatura_no', 'musteri', 'tutar', 'kur', 'doviz', 'vade_gun', 'vade_tarih', 'durum', 'notlar']) {

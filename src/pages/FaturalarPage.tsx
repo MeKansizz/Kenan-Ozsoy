@@ -12,7 +12,7 @@ interface Fatura {
   id: string; tarih: string; fatura_no: string; musteri: string;
   tutar: number; doviz: string; kur: number; tutar_eur: number;
   vade_gun: number; vade_tarih: string; durum: string; notlar: string;
-  hesap_disi: number; banka: string; updated_by: string;
+  hesap_disi: number; banka: string; temlik: string; updated_by: string;
 }
 
 function calcVadeTarih(tarih: string, vadeGun: number): string {
@@ -34,7 +34,7 @@ export function FaturalarSection({ currentUser }: { currentUser: string }) {
     tarih: new Date().toISOString().slice(0, 10),
     fatura_no: '', musteri: '', tutar: '', doviz: 'EUR',
     kur: '', vade_gun: '', vade_tarih: '',
-    durum: 'beklemede', notlar: '', banka: ''
+    durum: 'beklemede', notlar: '', banka: '', temlik: 'verilmedi'
   })
 
   const load = async () => {
@@ -124,7 +124,7 @@ export function FaturalarSection({ currentUser }: { currentUser: string }) {
       tarih: new Date().toISOString().slice(0, 10),
       fatura_no: '', musteri: '', tutar: '', doviz: 'EUR',
       kur: '', vade_gun: '', vade_tarih: '',
-      durum: 'beklemede', notlar: '', banka: ''
+      durum: 'beklemede', notlar: '', banka: '', temlik: 'verilmedi'
     })
     setEditId(null)
     setShowForm(false)
@@ -157,7 +157,8 @@ export function FaturalarSection({ currentUser }: { currentUser: string }) {
       vade_tarih: f.vade_tarih || '',
       durum: f.durum,
       notlar: f.notlar || '',
-      banka: f.banka || ''
+      banka: f.banka || '',
+      temlik: f.temlik || 'verilmedi'
     })
     setEditId(f.id)
     setShowForm(true)
@@ -323,7 +324,7 @@ export function FaturalarSection({ currentUser }: { currentUser: string }) {
         </div>
 
         {/* Column headers */}
-        <div className="grid grid-cols-[24px_85px_100px_minmax(0,1fr)_120px_50px_120px_60px_85px_80px_60px_50px_48px] border-b border-[--color-graphite] px-1">
+        <div className="grid grid-cols-[24px_85px_100px_minmax(0,1fr)_120px_50px_120px_60px_85px_80px_60px_60px_50px_48px] border-b border-[--color-graphite] px-1">
           <div className="py-2 text-[9px] text-[--color-text-muted] text-center" title="Hesap Dışı">HD</div>
           <div className="px-2 py-2 text-xs text-[--color-text-muted]">Tarih</div>
           <div className="px-2 py-2 text-xs text-[--color-text-muted]">Fatura No</div>
@@ -334,6 +335,7 @@ export function FaturalarSection({ currentUser }: { currentUser: string }) {
           <div className="px-2 py-2 text-xs text-[--color-text-muted] text-right">Vade</div>
           <div className="px-2 py-2 text-xs text-[--color-text-muted]">Vade Tarihi</div>
           <div className="px-2 py-2 text-xs text-[--color-text-muted]">Banka</div>
+          <div className="px-2 py-2 text-xs text-[--color-text-muted] text-center">Temlik</div>
           <div className="px-2 py-2 text-xs text-[--color-text-muted] text-center">Durum</div>
           <div className="px-2 py-2 text-xs text-[--color-text-muted] text-center">Kişi</div>
           <div></div>
@@ -360,7 +362,7 @@ export function FaturalarSection({ currentUser }: { currentUser: string }) {
             }
             const f = item
             return (
-            <div key={f.id} className={`grid grid-cols-[24px_85px_100px_minmax(0,1fr)_120px_50px_120px_60px_85px_80px_60px_50px_48px] px-1 h-9 overflow-hidden border-b border-[--color-graphite]/50 hover:bg-[--color-steel]/30 ${f.hesap_disi ? 'opacity-40' : ''}`}>
+            <div key={f.id} className={`grid grid-cols-[24px_85px_100px_minmax(0,1fr)_120px_50px_120px_60px_85px_80px_60px_60px_50px_48px] px-1 h-9 overflow-hidden border-b border-[--color-graphite]/50 hover:bg-[--color-steel]/30 ${f.hesap_disi ? 'opacity-40' : ''}`}>
               <div className="flex items-center justify-center">
                 <button onClick={async () => {
                   if (!currentUser) return
@@ -379,6 +381,16 @@ export function FaturalarSection({ currentUser }: { currentUser: string }) {
               <div className="px-2 py-2 text-right text-xs text-[--color-text-muted]">{f.vade_gun ? `${f.vade_gun}g` : '-'}</div>
               <div className="px-2 py-2 text-xs text-[--color-text-muted] whitespace-nowrap">{f.vade_tarih ? formatDate(f.vade_tarih) : '-'}</div>
               <div className="px-2 py-2 text-[10px] text-[--color-text-muted] truncate">{f.banka || '-'}</div>
+              <div className="px-2 py-2 text-center whitespace-nowrap">
+                <button onClick={async () => {
+                  if (!currentUser) return
+                  const newTemlik = (f.temlik === 'verildi') ? 'verilmedi' : 'verildi'
+                  await api.kenanUpdateFatura(f.id, { ...f, temlik: newTemlik, user: currentUser })
+                  load()
+                }} className={`text-[10px] px-1.5 py-0.5 rounded-full cursor-pointer hover:opacity-80 ${f.temlik === 'verildi' ? 'bg-emerald-400/10 text-emerald-400' : 'bg-red-400/10 text-red-400'}`}>
+                  {f.temlik === 'verildi' ? 'VERİLDİ' : 'VERİLMEDİ'}
+                </button>
+              </div>
               <div className="px-2 py-2 text-center whitespace-nowrap">
                 {f.hesap_disi ? (
                   <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-500/20 text-red-400">H.Dışı</span>

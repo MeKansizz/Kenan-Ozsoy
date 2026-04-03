@@ -201,4 +201,8 @@ export function initSchema() {
   if (!fatCols.find((c: any) => c.name === 'banka')) {
     db.exec("ALTER TABLE kenan_faturalar ADD COLUMN banka TEXT DEFAULT ''")
   }
+  // Migration: add temlik column to faturalar if missing
+  if (!fatCols.find((c: any) => c.name === 'temlik')) {
+    db.exec("ALTER TABLE kenan_faturalar ADD COLUMN temlik TEXT DEFAULT 'verilmedi'")
+  }
 }
