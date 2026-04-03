@@ -4,6 +4,7 @@ import { Filter, ArrowDownCircle, ArrowUpCircle, RefreshCw, Users, Clock, UserCh
 import { OdemePlanlamaSection } from './OdemePlanlamaPage'
 import { OdemelerSection } from './OdemelerPage'
 import { SiparislerSection } from './SiparislerPage'
+import { TedarikPlanlamaSection } from './TedarikPlanlamaPage'
 import { DURUM_LABELS, BASLANGIC_BAKIYE, formatKur, formatDate, maskedEur } from '@/lib/kenan-utils'
 
 // ==================== LOGIN PANEL ====================
@@ -409,7 +410,7 @@ function CariSection({ currentUser }: { currentUser: string }) {
 // ==================== ANA SAYFA ====================
 
 export function KenanOzsoyPage() {
-  const [tab, setTab] = useState<'cari' | 'odemeler' | 'siparisler' | 'planlama'>('cari')
+  const [tab, setTab] = useState<'cari' | 'odemeler' | 'siparisler' | 'planlama' | 'tedarik'>('cari')
   const [currentUser, setCurrentUser] = useState(() => localStorage.getItem('kenan_current_user') || '')
   const [currentRole, setCurrentRole] = useState(() => localStorage.getItem('kenan_current_role') || '')
 
@@ -450,7 +451,11 @@ export function KenanOzsoyPage() {
         </button>
         <button onClick={() => setTab('planlama')}
           className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${tab === 'planlama' ? 'bg-copper text-white' : 'text-[--color-text-secondary] hover:text-[--color-text-primary]'}`}>
-          Planlama
+          Ödeme Planlama
+        </button>
+        <button onClick={() => setTab('tedarik')}
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${tab === 'tedarik' ? 'bg-purple-500 text-white' : 'text-[--color-text-secondary] hover:text-[--color-text-primary]'}`}>
+          Tedarik Planlama
         </button>
       </div>
 
@@ -458,6 +463,7 @@ export function KenanOzsoyPage() {
       {tab === 'odemeler' && <OdemelerSection currentUser={currentUser} />}
       {tab === 'siparisler' && <SiparislerSection currentUser={currentUser} />}
       {tab === 'planlama' && <OdemePlanlamaSection currentUser={currentUser} />}
+      {tab === 'tedarik' && <TedarikPlanlamaSection currentUser={currentUser} />}
     </div>
   )
 }

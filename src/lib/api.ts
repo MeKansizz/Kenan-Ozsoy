@@ -81,4 +81,5 @@ export const api = {
   kenanAddMaliyetPlan: (tip: string, termin: string, tutar_eur: number, grup?: string) => request<any>('/kenan/planlama/maliyet', { method: 'POST', body: JSON.stringify({ tip, termin, tutar_eur, grup }) }),
   kenanUpdateMaliyetSira: (id: string, sira: number) => request<any>(`/kenan/planlama/maliyet/${id}/sira`, { method: 'PUT', body: JSON.stringify({ sira }) }),
   kenanDeleteMaliyetPlan: (id: string) => request<any>(`/kenan/planlama/maliyet/${id}`, { method: 'DELETE' }),
+  kenanGetTedarikPlanlama: () => request<any[]>('/kenan/tedarik-planlama'),
 }

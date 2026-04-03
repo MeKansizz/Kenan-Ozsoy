@@ -728,4 +728,69 @@ router.delete('/planlama/maliyet/:id', (req, res) => {
   res.json({ success: true })
 })
 
+// === TEDARİK PLANLAMA ===
+// İplik cinsi bazında gruplanmış toplam — detayda sipariş bazlı kg/fiyat
+router.get('/tedarik-planlama', (_req, res) => {
+  const db = getDb()
+  const siparisler = db.prepare(`
+    SELECT id, musteri, iplik_termin, COALESCE(iplik_cinsi, '') as iplik_cinsi,
+           COALESCE(iplik_entries, '[]') as iplik_entries,
+           COALESCE(iplik_miktar, 0) as iplik_miktar,
+           COALESCE(iplik_birim_fiyat, 0) as iplik_birim_fiyat,
+           COALESCE(iplik_birim_doviz, 'EUR') as iplik_birim_doviz,
+           maliyet_iplik, siparis_no
+    FROM kenan_siparisler
+    WHERE (hesap_disi IS NULL OR hesap_disi = 0)
+      AND (iplik_termin != '' AND iplik_termin IS NOT NULL AND maliyet_iplik > 0)
+    ORDER BY iplik_termin ASC
+  `).all() as any[]
+
+  interface TedarikDetay { musteri: string; siparis_no: string; termin: string; cinsi: string; miktar: number; birim_fiyat: number; doviz: string; toplam_eur: number }
+  const gruplar: Record<string, { toplam_kg: number; toplam_eur: number; detay: TedarikDetay[] }> = {}
+
+  const addToGrup = (cinsi: string, d: TedarikDetay) => {
+    if (!gruplar[cinsi]) gruplar[cinsi] = { toplam_kg: 0, toplam_eur: 0, detay: [] }
+    gruplar[cinsi].toplam_kg += d.miktar
+    gruplar[cinsi].toplam_eur += d.toplam_eur
+    gruplar[cinsi].detay.push(d)
+  }
+
+  for (const s of siparisler) {
+    let entries: any[] = []
+    try { entries = JSON.parse(s.iplik_entries || '[]') } catch { entries = [] }
+
+    if (entries.length > 0) {
+      const totalMiktar = entries.reduce((sum: number, e: any) => sum + (parseFloat(e.miktar) || 0), 0)
+      for (const e of entries) {
+        const miktar = parseFloat(e.miktar) || 0
+        const oran = totalMiktar > 0 ? miktar / totalMiktar : 0
+        addToGrup(e.cinsi || 'Belirtilmemiş', {
+          musteri: s.musteri, siparis_no: s.siparis_no || '', termin: s.iplik_termin,
+          cinsi: e.cinsi || '', miktar, birim_fiyat: parseFloat(e.birim_fiyat) || 0,
+          doviz: e.doviz || 'EUR', toplam_eur: s.maliyet_iplik * oran,
+        })
+      }
+    } else if (s.iplik_miktar > 0) {
+      addToGrup(s.iplik_cinsi || 'Belirtilmemiş', {
+        musteri: s.musteri, siparis_no: s.siparis_no || '', termin: s.iplik_termin,
+        cinsi: s.iplik_cinsi || '', miktar: s.iplik_miktar, birim_fiyat: s.iplik_birim_fiyat,
+        doviz: s.iplik_birim_doviz, toplam_eur: s.maliyet_iplik,
+      })
+    }
+  }
+
+  // Sıralı dizi olarak dön
+  const result = Object.entries(gruplar)
+    .map(([cinsi, data]) => ({
+      cinsi,
+      toplam_kg: data.toplam_kg,
+      toplam_eur: data.toplam_eur,
+      adet: data.detay.length,
+      detay: data.detay.sort((a, b) => a.termin.localeCompare(b.termin)),
+    }))
+    .sort((a, b) => a.cinsi.localeCompare(b.cinsi))
+
+  res.json(result)
+})
+
 export default router
