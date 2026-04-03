@@ -654,23 +654,40 @@ router.get('/planlama/maliyet-summary', (_req, res) => {
     WHERE iplik_termin != '' AND iplik_termin IS NOT NULL AND maliyet_iplik > 0 AND (hesap_disi IS NULL OR hesap_disi = 0)
   `).all() as any[]
 
+  // İplik detay: her gruptaki bireysel iplik kalemleri (cinsi, kg, birim fiyat, döviz)
   const kgMap: Record<string, number> = {}
+  const detayMap: Record<string, { cinsi: string; miktar: number; birim_fiyat: number; doviz: string }[]> = {}
   for (const s of allSip) {
     const key = `${s.iplik_termin}:${s.iplik_cinsi}`
+    if (!detayMap[key]) detayMap[key] = []
     let kg = 0
     try {
       const entries = JSON.parse(s.iplik_entries || '[]')
       if (entries.length > 0) {
-        kg = entries.reduce((sum: number, e: any) => sum + (parseFloat(e.miktar) || 0), 0)
+        for (const e of entries) {
+          const m = parseFloat(e.miktar) || 0
+          const bf = parseFloat(e.birim_fiyat) || 0
+          kg += m
+          detayMap[key].push({ cinsi: e.cinsi || '', miktar: m, birim_fiyat: bf, doviz: e.doviz || 'EUR' })
+        }
       } else {
         kg = s.iplik_miktar || 0
+        if (kg > 0) detayMap[key].push({ cinsi: s.iplik_cinsi || '', miktar: kg, birim_fiyat: 0, doviz: 'EUR' })
       }
-    } catch { kg = s.iplik_miktar || 0 }
+    } catch {
+      kg = s.iplik_miktar || 0
+      if (kg > 0) detayMap[key].push({ cinsi: s.iplik_cinsi || '', miktar: kg, birim_fiyat: 0, doviz: 'EUR' })
+    }
     kgMap[key] = (kgMap[key] || 0) + kg
   }
 
   res.json({
-    iplik: iplik.map(r => ({ ...r, toplam_kg: kgMap[`${r.termin}:${r.grup}`] || 0, planned: plannedSet.has(`iplik:${r.termin}:${r.grup}`) })),
+    iplik: iplik.map(r => ({
+      ...r,
+      toplam_kg: kgMap[`${r.termin}:${r.grup}`] || 0,
+      detay: detayMap[`${r.termin}:${r.grup}`] || [],
+      planned: plannedSet.has(`iplik:${r.termin}:${r.grup}`),
+    })),
     boya: boya.map(r => ({ ...r, planned: plannedSet.has(`boya:${r.termin}:${r.grup}`) })),
   })
 })

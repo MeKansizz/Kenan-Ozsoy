@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { X, GripVertical, Plus, CalendarX2, ArrowDownCircle, ArrowUpCircle } from 'lucide-react'
+import { X, GripVertical, Plus, CalendarX2, ArrowDownCircle, ArrowUpCircle, ChevronRight, ChevronDown } from 'lucide-react'
 import { api } from '../lib/api'
 
 function formatDate(dateStr: string): string {
@@ -38,8 +38,12 @@ interface MaliyetPlanItem {
   id: string; tip: string; termin: string; tutar_eur: number; sira: number; grup: string;
 }
 
+interface IplikDetay {
+  cinsi: string; miktar: number; birim_fiyat: number; doviz: string;
+}
+
 interface MaliyetSummaryRow {
-  termin: string; grup: string; toplam: number; adet: number; planned: boolean; toplam_kg?: number;
+  termin: string; grup: string; toplam: number; adet: number; planned: boolean; toplam_kg?: number; detay?: IplikDetay[];
 }
 
 interface DropData { plan_id?: string; odeme_id?: string; marker_id?: string; maliyet_id?: string }
@@ -69,6 +73,7 @@ export function OdemePlanlamaSection({ currentUser }: { currentUser: string }) {
   const [cariEntries, setCariEntries] = useState<CariEntry[]>([])
   const [maliyetPlan, setMaliyetPlan] = useState<MaliyetPlanItem[]>([])
   const [maliyetSummary, setMaliyetSummary] = useState<{ iplik: MaliyetSummaryRow[]; boya: MaliyetSummaryRow[] }>({ iplik: [], boya: [] })
+  const [expandedIplik, setExpandedIplik] = useState<Set<string>>(new Set())
 
   const loadAll = useCallback(async () => {
     try {
@@ -449,35 +454,65 @@ export function OdemePlanlamaSection({ currentUser }: { currentUser: string }) {
                 <div className="text-xs text-[--color-text-muted]/50 px-2 py-3">Sipariş maliyet verisi yok</div>
               ) : (
                 <div className="space-y-1">
-                  {maliyetSummary.iplik.map(row => (
-                    <div
-                      key={`iplik-${row.termin}-${row.grup}`}
-                      className={`flex items-center justify-between px-3 py-2 rounded-lg border transition-colors ${row.planned ? 'border-purple-400/20 bg-purple-400/5 opacity-50' : 'border-[--color-graphite] bg-[--color-midnight]/50 hover:border-purple-400/30'}`}
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-purple-400/10 text-purple-400 shrink-0">İplik</span>
-                        <span className="text-sm text-[--color-text-primary] font-mono shrink-0">{formatDate(row.termin)}</span>
-                        {row.grup && <span className="text-[10px] text-purple-300 truncate">{row.grup}</span>}
-                        {row.toplam_kg ? <span className="text-[10px] text-purple-400/70 shrink-0">{new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(row.toplam_kg)} kg</span> : null}
-                        <span className="text-[10px] text-[--color-text-muted] shrink-0">{row.adet} sip</span>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-sm font-mono text-purple-400 whitespace-nowrap">{maskedEur(row.toplam, loggedIn)}</span>
-                        {!row.planned ? (
-                          <button
-                            onClick={() => handleAddMaliyetToPlan('iplik', row.termin, row.toplam, row.grup)}
-                            disabled={!currentUser}
-                            className="p-1 rounded-md bg-purple-400/10 text-purple-400 hover:bg-purple-400/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                            title="Planlamaya ekle"
-                          >
-                            <Plus size={12} />
-                          </button>
-                        ) : (
-                          <span className="text-[9px] text-purple-400/50 px-1">eklendi</span>
+                  {maliyetSummary.iplik.map(row => {
+                    const rowKey = `${row.termin}:${row.grup}`
+                    const isOpen = expandedIplik.has(rowKey)
+                    const hasDetay = row.detay && row.detay.length > 0
+                    return (
+                      <div key={`iplik-${rowKey}`}>
+                        <div
+                          className={`flex items-center justify-between px-3 py-2 rounded-lg border transition-colors ${row.planned ? 'border-purple-400/20 bg-purple-400/5 opacity-50' : 'border-[--color-graphite] bg-[--color-midnight]/50 hover:border-purple-400/30'} ${hasDetay ? 'cursor-pointer' : ''}`}
+                          onClick={() => {
+                            if (!hasDetay) return
+                            setExpandedIplik(prev => {
+                              const next = new Set(prev)
+                              if (next.has(rowKey)) next.delete(rowKey); else next.add(rowKey)
+                              return next
+                            })
+                          }}
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            {hasDetay ? (
+                              isOpen ? <ChevronDown size={12} className="text-purple-400/60 shrink-0" /> : <ChevronRight size={12} className="text-purple-400/60 shrink-0" />
+                            ) : <span className="w-3 shrink-0" />}
+                            <span className="text-sm text-[--color-text-primary] font-mono shrink-0">{formatDate(row.termin)}</span>
+                            {row.toplam_kg ? <span className="text-[10px] font-semibold text-purple-400/80 shrink-0">{new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(row.toplam_kg)} kg</span> : null}
+                            <span className="text-[10px] text-[--color-text-muted] shrink-0">{row.adet} sip</span>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-sm font-mono text-purple-400 whitespace-nowrap">{maskedEur(row.toplam, loggedIn)}</span>
+                            {!row.planned ? (
+                              <button
+                                onClick={e => { e.stopPropagation(); handleAddMaliyetToPlan('iplik', row.termin, row.toplam, row.grup) }}
+                                disabled={!currentUser}
+                                className="p-1 rounded-md bg-purple-400/10 text-purple-400 hover:bg-purple-400/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                title="Planlamaya ekle"
+                              >
+                                <Plus size={12} />
+                              </button>
+                            ) : (
+                              <span className="text-[9px] text-purple-400/50 px-1">eklendi</span>
+                            )}
+                          </div>
+                        </div>
+                        {isOpen && hasDetay && (
+                          <div className="ml-5 mt-1 mb-1 space-y-0.5">
+                            {row.detay!.map((d, i) => (
+                              <div key={i} className="flex items-center justify-between px-3 py-1.5 rounded bg-purple-400/5 border border-purple-400/10">
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span className="text-[10px] text-purple-300 truncate">{d.cinsi || '—'}</span>
+                                </div>
+                                <div className="flex items-center gap-3 shrink-0">
+                                  <span className="text-[10px] font-mono text-purple-400/70">{new Intl.NumberFormat('tr-TR', { maximumFractionDigits: 0 }).format(d.miktar)} kg</span>
+                                  <span className="text-[10px] font-mono text-[--color-text-muted]">× {new Intl.NumberFormat('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(d.birim_fiyat)} {d.doviz}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         )}
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
             </div>
