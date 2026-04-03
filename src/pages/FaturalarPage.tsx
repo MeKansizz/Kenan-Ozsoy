@@ -104,6 +104,11 @@ export function FaturalarSection({ currentUser }: { currentUser: string }) {
 
   const sorted = useMemo(() => {
     const list = [...faturalar].sort((a, b) => {
+      // Önce temlik verilmeyenler üstte
+      const ta = a.temlik === 'verildi' ? 1 : 0
+      const tb = b.temlik === 'verildi' ? 1 : 0
+      if (ta !== tb) return ta - tb
+      // Sonra vade tarihine göre
       const va = a.vade_tarih || '9999-12-31'
       const vb = b.vade_tarih || '9999-12-31'
       return va.localeCompare(vb)
