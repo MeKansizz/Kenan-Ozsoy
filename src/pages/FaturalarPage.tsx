@@ -77,7 +77,9 @@ export function FaturalarSection({ currentUser }: { currentUser: string }) {
     const aktif = faturalar.filter(f => !f.hesap_disi)
     const toplam = aktif.reduce((s, f) => s + f.tutar_eur, 0)
     const tamamlanan = aktif.filter(f => f.durum === 'tamamlandi').reduce((s, f) => s + f.tutar_eur, 0)
-    return { toplam, tamamlanan, kalan: toplam - tamamlanan }
+    const temlikVerilmeyen = aktif.filter(f => f.temlik !== 'verildi').reduce((s, f) => s + f.tutar_eur, 0)
+    const temlikVerilmeyenAdet = aktif.filter(f => f.temlik !== 'verildi').length
+    return { toplam, tamamlanan, kalan: toplam - tamamlanan, temlikVerilmeyen, temlikVerilmeyenAdet }
   }, [faturalar])
 
   const aylikVadeler = useMemo(() => {
@@ -173,7 +175,7 @@ export function FaturalarSection({ currentUser }: { currentUser: string }) {
   return (
     <div className="space-y-4">
       {/* Summary Cards */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-4 gap-4">
         <div className="bg-[--color-slate] border border-[--color-graphite] rounded-xl p-4">
           <div className="text-xs text-[--color-text-muted] mb-1">Fatura Toplamı</div>
           <div className="text-lg font-bold text-info font-mono">{maskedEur(summary.toplam, loggedIn)}</div>
@@ -214,6 +216,11 @@ export function FaturalarSection({ currentUser }: { currentUser: string }) {
         <div className="bg-[--color-slate] border border-[--color-graphite] rounded-xl p-4">
           <div className="text-xs text-[--color-text-muted] mb-1">Kalan</div>
           <div className="text-lg font-bold text-amber-400 font-mono">{maskedEur(summary.kalan, loggedIn)}</div>
+        </div>
+        <div className="bg-[--color-slate] border border-red-500/50 rounded-xl p-4">
+          <div className="text-xs text-red-400 mb-1">Temlik Verilmeyen</div>
+          <div className="text-lg font-bold text-red-400 font-mono">{maskedEur(summary.temlikVerilmeyen, loggedIn)}</div>
+          <div className="text-[10px] text-[--color-text-muted] mt-1">{summary.temlikVerilmeyenAdet} fatura</div>
         </div>
       </div>
 
