@@ -84,7 +84,7 @@ export function TedarikPlanlamaSection({ currentUser }: { currentUser: string })
         </div>
 
         {/* Header */}
-        <div className="grid grid-cols-[24px_minmax(0,1fr)_100px_100px_60px] px-3 border-b border-[--color-graphite]">
+        <div className="grid grid-cols-[24px_minmax(0,1fr)_100px_130px_60px] px-3 border-b border-[--color-graphite]">
           <div></div>
           <div className="px-2 py-2 text-xs text-[--color-text-muted]">Iplik Cinsi</div>
           <div className="px-2 py-2 text-xs text-[--color-text-muted] text-right">Toplam KG</div>
@@ -104,7 +104,7 @@ export function TedarikPlanlamaSection({ currentUser }: { currentUser: string })
                 <div key={grup.cinsi}>
                   {/* Grup satiri */}
                   <div
-                    className="grid grid-cols-[24px_minmax(0,1fr)_100px_100px_60px] px-3 h-10 items-center border-b border-[--color-graphite]/30 hover:bg-purple-400/5 cursor-pointer transition-colors"
+                    className="grid grid-cols-[24px_minmax(0,1fr)_100px_130px_60px] px-3 h-10 items-center border-b border-[--color-graphite]/30 hover:bg-purple-400/5 cursor-pointer transition-colors"
                     onClick={() => toggleExpand(grup.cinsi)}
                   >
                     <div className="flex items-center justify-center text-purple-400/60">
@@ -112,7 +112,7 @@ export function TedarikPlanlamaSection({ currentUser }: { currentUser: string })
                     </div>
                     <div className="px-2 text-sm font-medium text-purple-300 truncate">{grup.cinsi}</div>
                     <div className="px-2 text-right text-sm font-mono font-semibold text-purple-400">{formatKg(grup.toplam_kg)} kg</div>
-                    <div className="px-2 text-right text-sm font-mono text-purple-400">{maskedEur(grup.toplam_eur, loggedIn)}</div>
+                    <div className="px-2 text-right text-sm font-mono text-purple-400 whitespace-nowrap">{maskedEur(grup.toplam_eur, loggedIn)}</div>
                     <div className="px-2 text-center text-[10px] text-[--color-text-muted]">{grup.adet}</div>
                   </div>
 
@@ -152,11 +152,11 @@ export function TedarikPlanlamaSection({ currentUser }: { currentUser: string })
             })}
 
             {/* Genel toplam */}
-            <div className="grid grid-cols-[24px_minmax(0,1fr)_100px_100px_60px] px-3 h-10 items-center bg-purple-400/10 border-t border-purple-400/20">
+            <div className="grid grid-cols-[24px_minmax(0,1fr)_100px_130px_60px] px-3 h-10 items-center bg-purple-400/10 border-t border-purple-400/20">
               <div></div>
               <div className="px-2 text-sm font-semibold text-purple-300">TOPLAM</div>
               <div className="px-2 text-right text-sm font-mono font-bold text-purple-400">{formatKg(genelToplamKg)} kg</div>
-              <div className="px-2 text-right text-sm font-mono font-bold text-purple-400">{maskedEur(genelToplamEur, loggedIn)}</div>
+              <div className="px-2 text-right text-sm font-mono font-bold text-purple-400 whitespace-nowrap">{maskedEur(genelToplamEur, loggedIn)}</div>
               <div className="px-2 text-center text-[10px] text-[--color-text-muted]">{genelToplamAdet}</div>
             </div>
           </div>

@@ -8,6 +8,15 @@ import {
   getWeekNumber, getWeekDateRange, groupByWeek, useKur
 } from '@/lib/kenan-utils'
 
+function safeParseEntries(raw: any): any[] {
+  if (!raw) return []
+  try {
+    let parsed = JSON.parse(raw)
+    if (typeof parsed === 'string') parsed = JSON.parse(parsed)
+    return Array.isArray(parsed) ? parsed : []
+  } catch { return [] }
+}
+
 interface IplikEntry {
   cinsi: string
   miktar: string
@@ -48,7 +57,7 @@ export function SiparislerSection({ currentUser }: { currentUser: string }) {
   const iplikCinsleri = useMemo(() => {
     const fromDb = siparisler.map((s: any) => s.iplik_cinsi).filter(Boolean)
     const fromEntries = siparisler.flatMap((s: any) => {
-      try { return JSON.parse(s.iplik_entries || '[]').map((e: any) => e.cinsi) } catch { return [] }
+      return safeParseEntries(s.iplik_entries).map((e: any) => e.cinsi)
     }).filter(Boolean)
     const fromForm = iplikler.map(e => e.cinsi).filter(Boolean)
     return [...new Set([...fromDb, ...fromEntries, ...fromForm])].sort()
@@ -96,8 +105,7 @@ export function SiparislerSection({ currentUser }: { currentUser: string }) {
 
   // Siparişteki iplik entries'den toplam EUR hesapla (tablo için)
   const getIplikTotal = (s: any): number => {
-    let entries: IplikEntry[] = []
-    try { entries = JSON.parse(s.iplik_entries || '[]') } catch { /* */ }
+    const entries: IplikEntry[] = safeParseEntries(s.iplik_entries)
     if (entries.length > 0) {
       return entries.reduce((sum, e) => sum + calcIplikEur(e, rates), 0)
     }
@@ -143,8 +151,7 @@ export function SiparislerSection({ currentUser }: { currentUser: string }) {
     if (s.tarih) fetchSiparisKur(s.tarih)
 
     // iplik_entries parse
-    let entries: IplikEntry[] = []
-    try { entries = JSON.parse((s as any).iplik_entries || '[]') } catch { /* */ }
+    let entries: IplikEntry[] = safeParseEntries((s as any).iplik_entries)
     // Eski tek satır verisi varsa ve entries boşsa, migrate et
     if (entries.length === 0 && ((s as any).iplik_miktar > 0 || (s as any).iplik_cinsi)) {
       entries = [{
